@@ -1,0 +1,34 @@
+body {
+  font: 18px "Helvetica Neue","Open Sans",sans-serif;
+}
+
+a {
+  color: #00B7FF;
+}
+
+h1, h2 {
+  font-weight: 100;
+}
+
+h1 {
+  font-size: 35px;
+}
+
+ul li {
+  padding: 5px;
+}
+
+.casting-complex-name {
+  font-size:35px;
+  color: #edf9ff;
+  position: absolute;
+  width: 100%;
+  left: 0;
+  text-align: center;
+  margin:0 auto;
+}
+
+.navbar {
+  background-color: #085f89;
+  height: 150px;
+}
