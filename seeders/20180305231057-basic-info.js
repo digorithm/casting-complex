@@ -29,11 +29,14 @@ module.exports = {
     
     await queryInterface.bulkInsert('CastingSpecializations', seeds["CastingSpecializations"])
 
+    await queryInterface.bulkInsert('BreakdownStatuses', seeds["BreakdownStatuses"])
 
+    await queryInterface.bulkInsert('AuditionStatuses', seeds["AuditionStatuses"])
+
+    await queryInterface.bulkInsert('AuditionRequestStatuses', seeds["AuditionRequestStatuses"])
 
     var countries = JSON.parse(fs.readFileSync("seeders/utils/countries.json"));
 
-    
     // Add countries and their cities
     var cities = []
     for (let country in countries) {

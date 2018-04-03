@@ -2,6 +2,7 @@
 
 var assert = require('assert');
 var moment = require('moment');
+var _ = require('lodash');
 
 describe('Database testing', function () {
   before(async function () {
@@ -23,6 +24,12 @@ describe('Database testing', function () {
     this.CastingDirector = await require('../../models').CastingDirector
     this.CastingSpecialization = await require('../../models').CastingSpecialization
     this.Message = await require('../../models').Message
+    this.Breakdown = await require('../../models').Breakdown
+    this.BreakdownRole = await require('../../models').BreakdownRole
+    this.Audition = await require('../../models').Audition
+    this.AuditionStatus = await require('../../models').AuditionStatus
+    this.AuditionRequest = await require('../../models').AuditionRequest
+    this.AuditionRequestStatus = await require('../../models').AuditionRequestStatus
   });
 
   beforeEach(async function () {
@@ -98,7 +105,7 @@ describe('Database testing', function () {
 
       await actor.setCredits([credit_1, credit_2])
       await actor.setUnions([union_1, union_2])
-      
+
       const actual = await actor.fullProfile()
 
       assert.deepEqual(JSON.stringify(actual), JSON.stringify(expected))
@@ -106,7 +113,7 @@ describe('Database testing', function () {
     
     it('creates an agent', async function () {
 
-      const expected = {"id":1,"firstName":"Agent","middleName":"Middle","lastName":"Doe","streetAddress":"5775 Toronto Road","phone":"778 320 9600","mobile":"778 320 9600","position":"Manager","agencyName":"Doe and company","zipPostal":"VVV VVV","website":"coolwebsite.com","sizeOfRoster":30,"profile":"Hiring Actors!","userId":3,"Actors":[{"birthdate":"2018-03-09","id":1,"firstName":"John","lastName":"Doe"}],"country":{"id":2,"name":"Canada"},"city":{"id":2,"name":"Vancouver"},"RosterTypes":[{"id":1,"name":"Actors","Agent_RosterType":{"agentId":1,"RosterTypeId":1}},{"id":2,"name":"Musicians","Agent_RosterType":{"agentId":1,"RosterTypeId":2}}],"AgencyDivisions":[{"id":1,"name":"On-camera","Agent_AgencyDivision":{"AgencyDivisionId":1,"agentId":1}},{"id":2,"name":"Celebrity","Agent_AgencyDivision":{"AgencyDivisionId":2,"agentId":1}}]}
+      const expected = {"id":1,"firstName":"Agent","middleName":"Middle","lastName":"Doe","streetAddress":"5775 Toronto Road","phone":"778 320 9600","mobile":"778 320 9600","position":"Manager","agencyName":"Doe and company","zipPostal":"VVV VVV","website":"coolwebsite.com","sizeOfRoster":30,"profile":"Hiring Actors!","userId":3,"country":{"id":2,"name":"Canada"},"city":{"id":2,"name":"Vancouver"},"RosterTypes":[{"id":1,"name":"Actors","Agent_RosterType":{"agentId":1,"RosterTypeId":1}},{"id":2,"name":"Musicians","Agent_RosterType":{"agentId":1,"RosterTypeId":2}}],"AgencyDivisions":[{"id":1,"name":"On-camera","Agent_AgencyDivision":{"AgencyDivisionId":1,"agentId":1}},{"id":2,"name":"Celebrity","Agent_AgencyDivision":{"AgencyDivisionId":2,"agentId":1}}]}
 
       var role = await this.Role.create({ name: 'agent' });
 
@@ -147,7 +154,16 @@ describe('Database testing', function () {
       
       var fullAgent = await agent.fullProfile()
 
-      assert.deepEqual(JSON.stringify(fullAgent), JSON.stringify(expected))
+      assert.equal(JSON.stringify(fullAgent), JSON.stringify(expected))
+
+      var agentActor = await agent.getActors()
+
+      var agentActorJSON = agentActor[0].toJSON()
+
+      delete agentActorJSON["Agent_Actor"]
+      delete returned_actor[0]["Agent_Actor"]
+
+      assert.equal(JSON.stringify(agentActorJSON), JSON.stringify(returned_actor[0].toJSON()))
     });
     
     it('creates a casting director', async function () {
@@ -189,7 +205,7 @@ describe('Database testing', function () {
     
   });
   
-  describe.only('Messaging', function() {
+  describe('Messaging', function() {
     it('should send a simple message between 2 users', async function() {
       
       var actorRole = await this.Role.create({ name: 'actor' });
@@ -296,6 +312,231 @@ describe('Database testing', function () {
     });
 
   });
+
+
+  describe('Job board', function() {
+
+    it("Casting director should submit a breakdown with 2 roles", async function() {
+
+      var castingDirectorRole = await this.Role.create({ name: 'casting director' });
+
+      var castingDirectorUser = await this.User.create({ username: 'casting director doe', roleId: castingDirectorRole.id, email:"test@gmail.com", password: "123" });
+
+      var country = await this.Country.create({name: "Canada"});
+      var city = await this.City.create({name: "Vancouver", countryId: country.id});
+      
+      var castingDirector = await this.CastingDirector.create({
+        firstName: "Casting",
+        middleName: "Director",
+        lastName: "Doe",
+        streetAddress: "5775 Toronto Road",
+        phone: "778 320 9600",
+        mobile: "778 320 9600",
+        profile: "Hiring Actors!",
+        userId: castingDirectorUser.id,
+        countryId: country.id,
+        cityId: city.id,
+        zipPostal: "VVV VVV",
+        website: "coolwebsite.com",
+        companyName: "The Casting Company",
+        position: "Director",
+      })
+      
+      var spec1 = await this.CastingSpecialization.create({ name: "Film" })
+      var spec2 = await this.CastingSpecialization.create({ name: "General" })
+      await castingDirector.setCastingSpecializations([spec1, spec2])
+      
+      var breakdown = await this.Breakdown.create({
+        name: "The coolest tv show",
+        requiresUnion: true,
+        rates: "$500 per hour",
+        contact: "send an email to test@gmail.com with the subject TVSHOW",
+        citiesForTransmission: "Vancouver, Toronto, Quebec",
+        synopsis: "The synopsis for this tv show",
+        storyline: "The storyline for this tv show",
+        comments: "Some long comment about this project",
+        shootingStartsWhen: new Date("2018-06-08"),
+        shootingEndsWhen: new Date("2018-06-24"),
+        submissionDeadline: new Date("2018-06-01"),
+        callbackDate: new Date("2018-06-03"),
+        CastingDirectorId: castingDirector.id
+      });
+
+      // You can either set the breakdown casting director ID in the create or through this method
+      await castingDirector.setBreakdown([breakdown]);
+
+      var mediaType = await this.AgencyDivision.create({ name: "Television" });
+
+      await breakdown.setMediaType(mediaType);
+
+      var role1 = await this.BreakdownRole.create({ageRange: "between 18 and 24", description: "Description of role 1"})
+
+      var role2 = await this.BreakdownRole.create({ageRange: "between 28 and 34", description: "Description of role 2"})
+
+      await breakdown.setRole([role1, role2])
+
+      var breakdownFromCastingDirector = await castingDirector.getBreakdown();
+
+      Object.keys(breakdown.dataValues).forEach((k) => {
+        if ((k != "updatedAt") && (k != "createdAt")) {
+          assert.equal(breakdown[k], breakdownFromCastingDirector[0][k])
+        }
+      });
+
+      var roles = await breakdownFromCastingDirector[0].getRole();
+
+      assert.equal(roles[0].ageRange, "between 18 and 24");
+      assert.equal(roles[1].ageRange, "between 28 and 34");
+      assert.equal(roles[0].description, "Description of role 1");
+      assert.equal(roles[1].description, "Description of role 2");
+      assert.equal(roles[0].BreakdownId, 1)
+      assert.equal(roles[1].BreakdownId, 1)
+
+    });
+
+    it("Actor should be able to request audition to a role in a breakdown, and casting director should be able to accept and schedule audition", async function() {
+      
+      var role = await this.Role.create({ name: 'actor' })
+
+      var castingDirectorRole = await this.Role.create({ name: 'casting director' })
+
+      var user = await this.User.create({ username: 'Rodrigo Actor', roleId: role.id, email:"rodActor@gmail.com", password: "123" })
+
+      var eye = await this.Eye.create({ name: "black" })
+
+      var hair = await this.Hair.create({ name: "blonde" })
+
+      var gender = await this.Gender.create({ name: "Male" })
+
+      var ethnicity = await this.Ethnicity.create({ name: "Caucasian" })
+
+      var credit_1 = await this.Credit.create({ name: "Actor" })
+
+      var credit_2 = await this.Credit.create({ name: "Dancer" })
+
+      var union_1 = await this.Union.create({ name: "CAEA" })
+
+      var union_2 = await this.Union.create({ name: "EQUITY" })
+      
+      var country = await this.Country.create({name: "Brazil"})
+      var city = await this.City.create({name: "Salvador", countryId: country.id})
+
+      var actor = await this.Actor.create({
+        firstName: "Rodrigo",
+        middleName: "Actor",
+        lastName: "Doe",
+        legalName: "Rodrigo Doe",
+        streetAddress: "5775 Toronto Road",
+        phone: "778 320 9600",
+        mobile: "778 320 9600",
+        suite: "1005",
+        isRepresented: false,
+        height: 1.78,
+        weight: 174,
+        birthdate: new Date("1993-06-08"),
+        profile: "A very passionate actor",
+        userId: user.id,
+        eyeId: eye.id,
+        genderId: gender.id,
+        hairId: hair.id,
+        ethnicityId: ethnicity.id,
+        countryId: country.id,
+        cityId: city.id
+      })
+
+      await actor.setCredits([credit_1, credit_2])
+      await actor.setUnions([union_1, union_2])
+
+      var castingDirectorUser = await this.User.create({ username: 'casting director Rodrigo', roleId: castingDirectorRole.id, email:"test2@gmail.com", password: "123" });
+
+      var castingDirector = await this.CastingDirector.create({
+        firstName: "Casting",
+        middleName: "Director",
+        lastName: "Doe",
+        streetAddress: "5775 Toronto Road",
+        phone: "778 320 9600",
+        mobile: "778 320 9600",
+        profile: "Hiring Actors!",
+        userId: castingDirectorUser.id,
+        countryId: country.id,
+        cityId: city.id,
+        zipPostal: "VVV VVV",
+        website: "coolwebsite.com",
+        companyName: "The Casting Company",
+        position: "Director",
+      })
+      
+      var spec1 = await this.CastingSpecialization.create({ name: "Film" })
+      var spec2 = await this.CastingSpecialization.create({ name: "General" })
+      await castingDirector.setCastingSpecializations([spec1, spec2])
+      
+      // Creating breakdown
+      var breakdown = await this.Breakdown.create({
+        name: "The nicest tv show",
+        requiresUnion: true,
+        rates: "$500 per hour",
+        contact: "send an email to test@gmail.com with the subject TVSHOW",
+        citiesForTransmission: "Vancouver, Toronto, Quebec",
+        synopsis: "The synopsis for this tv show",
+        storyline: "The storyline for this tv show",
+        comments: "Some long comment about this project",
+        shootingStartsWhen: new Date("2018-06-08"),
+        shootingEndsWhen: new Date("2018-06-24"),
+        submissionDeadline: new Date("2018-06-01"),
+        callbackDate: new Date("2018-06-03"),
+        CastingDirectorId: castingDirector.id
+      });
+      await castingDirector.setBreakdown([breakdown]);
+      var mediaType = await this.AgencyDivision.create({ name: "Television" });
+      await breakdown.setMediaType(mediaType);
+      var role1 = await this.BreakdownRole.create({ageRange: "between 18 and 24", description: "Description of role 1"})
+      var role2 = await this.BreakdownRole.create({ageRange: "between 28 and 34", description: "Description of role 2"})
+      await breakdown.setRole([role1, role2])
+
+      // Creating audition request
+      var requestStatus = await this.AuditionRequestStatus.create({name: "Pending"})
+      
+      var acceptedStatus = await this.AuditionRequestStatus.create({name: "Accepted"})
+
+      var auditionRequest = await this.AuditionRequest.create({roleId: role1.id, comments: "accept me pls", BreakdownId: breakdown.id, statusId: requestStatus.id})
+
+      // Requests an audition
+      await actor.setAuditionRequests([auditionRequest])
+
+      // TODO: Assert that casting director can get their breakdown, get its requests, and approve them
+
+      var breakdownFromCastingDirector = await castingDirector.getBreakdown()
+
+      var requestFromBreakdown = await breakdownFromCastingDirector[0].getAuditionRequests()
+      
+      // Accept the request
+      await requestFromBreakdown[0].setStatus(acceptedStatus)
+
+      // Check that it was accepted
+      var requestFromActor = await actor.getAuditionRequests()
+      assert.equal(requestFromActor[0].statusId, acceptedStatus.id)
+
+      // Then create/schedule audition
+      var status = await this.AuditionStatus.create({name: "Active"});
+
+      var audition = await this.Audition.create({
+        address: "Address of the audition",
+        comments: "Some comments",
+        startsWhen: new Date("March 20, 2018 09:30:00"),
+        endsWhen: new Date("March 20, 2018 11:30:00"),
+        breakdownId: breakdown.id,
+        statusId: status.id,
+        ActorId: actor.id 
+      })
+
+      var auditionFromActor = await actor.getAuditions()
+
+      assert.equal(true, _.isEqual(audition.toJSON(), auditionFromActor[0].toJSON()))
+
+    });
+
+  });
+
 
 
   });

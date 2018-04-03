@@ -1,6 +1,10 @@
 'use strict';
 
 var moment = require('moment');
+var utils  = require('../utils')
+
+var RemoveFields = utils.RemoveFields;
+
 
 module.exports = (sequelize, DataTypes) => {
   const Agent = sequelize.define('Agent', {
@@ -53,20 +57,32 @@ module.exports = (sequelize, DataTypes) => {
       }
     },
     instanceMethods: {
+      
+      buildResponse: async function() {
+        var agentUser = await this.getUser();
+        var agentAgencyDivisions = await this.getAgencyDivisions();
+        var agentRosterTypes = await this.getRosterTypes();
+
+        var agentJson = this.toJSON();
+        agentJson.user = agentUser.toJSON();
+        agentJson.rosterTypeId = agentRosterTypes.map(r => r.id);
+        agentJson.agencyDivisionId = agentAgencyDivisions.map(a => a.id);
+
+        RemoveFields(agentJson.user, ["updatedAt", "createdAt", "password"])
+        RemoveFields(agentJson, ["updatedAt", "createdAt"])
+
+        return agentJson
+      },
+
       fullProfile: async function() {
 
         var models = this.sequelize.models
         
         var fullAgent = await Agent.findById(this.id, {
           attributes: {
-            exclude: ["createdAt", "updatedAt", "cityId", "countryId"]
+            exclude: ["createdAt", "updatedAt", "cityId", "countryId", "birthdate"]
           },
           include: [
-            {
-              model: models.Actor,
-              attributes: ["id", "firstName", "lastName"],
-              through: {attributes: []}
-            },
             {
               model: models.Country,
               attributes: ["id", "name"],

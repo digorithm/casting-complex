@@ -1,9 +1,22 @@
 'use strict';
 
+var bcrypt = require('bcryptjs');
+var utils  = require('../utils')
+
+var RemoveFields = utils.RemoveFields;
+
 module.exports = (sequelize, DataTypes) => {
   const User = sequelize.define('User', {
-    username: DataTypes.STRING,
-    email: DataTypes.STRING,
+    username: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true
+    },
+    email: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true
+    },
     password: DataTypes.STRING
   }, {
     classMethods: {
@@ -13,7 +26,6 @@ module.exports = (sequelize, DataTypes) => {
           as: "role"
         });
 
-        // To get references just: user.getReferences(). Or set if you wanna add it.
         User.hasMany(models.Reference, {
           as: "References"
         });
@@ -24,7 +36,18 @@ module.exports = (sequelize, DataTypes) => {
           timestamps: false
         });
       }
+    },
+    instanceMethods: {
+      buildResponse: async function () {
+        var userJson = this.toJSON();
+        RemoveFields(userJson, ["updatedAt", "createdAt", "password"]);
+        return userJson
+      }
     }
+  });
+
+  User.beforeCreate((user, options) => {
+    user.password = bcrypt.hashSync(user.password, 8);
   });
   return User;
 };

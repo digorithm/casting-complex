@@ -1,6 +1,9 @@
 'use strict';
 
 var moment = require('moment');
+var utils  = require('../utils')
+
+var RemoveFields = utils.RemoveFields;
 
 module.exports = (sequelize, DataTypes) => {
   const Actor = sequelize.define('Actor', {
@@ -28,7 +31,8 @@ module.exports = (sequelize, DataTypes) => {
       associate: function(models) {
         // associations can be defined here
         Actor.belongsTo(models.User, {
-          as: "user"
+          as: "user",
+          onDelete: 'CASCADE'
         });
 
         Actor.belongsTo(models.Eye, {
@@ -73,9 +77,30 @@ module.exports = (sequelize, DataTypes) => {
         Actor.belongsTo(models.City, {
           as: "city"
         });
+        
+        Actor.hasMany(models.AuditionRequest);
+
+        Actor.hasMany(models.Audition);
       }
     },
     instanceMethods: {
+
+      buildResponse: async function() {
+        var actorUser = await this.getUser();
+        var actorCredits = await this.getCredits();
+        var actorUnions = await this.getUnions();
+
+        var actorJson = this.toJSON();
+        actorJson.user = actorUser.toJSON();
+        actorJson.creditId = actorCredits.map(c => c.id);
+        actorJson.unionId = actorUnions.map(u => u.id);
+
+        RemoveFields(actorJson.user, ["updatedAt", "createdAt", "password"])
+        RemoveFields(actorJson, ["updatedAt", "createdAt"])
+
+        return actorJson
+      },
+
       fullProfile: async function() {
 
         var models = this.sequelize.models

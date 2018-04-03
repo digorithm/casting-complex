@@ -4,10 +4,12 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
-const winston = require('winston')
+const winston = require('winston');
 
 var routes = require('./routes/index');
 var users  = require('./routes/users');
+var actors = require('./routes/actors');
+var agents = require('./routes/agents');
 
 var app = express();
 
@@ -25,6 +27,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', routes);
 app.use('/users', users);
+app.use('/actors', actors);
+app.use('/agents', agents)
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
@@ -32,7 +36,6 @@ app.use(function(req, res, next) {
   err.status = 404;
   next(err);
 });
-
 
 // error handler
 // no stack traces leaked to user unless in development environment
@@ -43,6 +46,5 @@ app.use(function(err, req, res, next) {
     error: (app.get('env') === 'development') ? err : {}
   });
 });
-
 
 module.exports = app;

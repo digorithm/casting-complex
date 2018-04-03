@@ -90,5 +90,15 @@
                             {"name": "Film"},
                             {"name": "Fashion/print"},
                             {"name": "Voice presenters"},
-                            {"name": "Multimedia"}]
+                            {"name": "Multimedia"}],
+  
+  "BreakdownStatuses": [{"name": "Active"},
+                        {"name": "Inactive"},
+                        {"name": "Suspended"}],
+  "AuditionStatuses":  [{"name": "Active"},
+                        {"name": "Closed"},
+                        {"name": "Suspended"}],
+  "AuditionRequestStatuses": [{"name": "Pending"},
+                              {"name": "Approved"},
+                              {"name": "Rejected"}]
 }

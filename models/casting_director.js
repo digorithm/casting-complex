@@ -37,6 +37,10 @@ module.exports = (sequelize, DataTypes) => {
           foreignKey: "castingDirectorId",
           timestamps: false
         });
+        
+        CastingDirector.hasMany(models.Breakdown, {
+          as: "breakdown"
+        });
       }
     },
     instanceMethods: {

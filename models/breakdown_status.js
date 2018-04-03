@@ -1,8 +1,8 @@
 'use strict';
 
 module.exports = (sequelize, DataTypes) => {
-  const Hair = sequelize.define('Hair', {
+  const BreakdownStatus = sequelize.define('BreakdownStatus', {
     name: DataTypes.STRING,
   }, {timestamps: false});
-  return Hair;
+  return BreakdownStatus;
 };
