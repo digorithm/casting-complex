@@ -3,8 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "seed": "./node_modules/.bin/sequelize db:seed:all",
-    "start": "DEBUG=express-sequelize node ./bin/www",
+    "seed": "./server/node_modules/.bin/sequelize --config ./server/config/config.js --seeders-path ./server/seeders db:seed:all",
+    "start-server": "DEBUG=express-sequelize node ./server/bin/www",
     "test": "npm run test-unit && npm run test-integration",
     "test-unit": "cross-env NODE_ENV=test ./node_modules/.bin/mocha --timeout 5000 test/unit/*.test.js",
     "test-integration": "cross-env NODE_ENV=test ./node_modules/.bin/mocha --timeout 5000 test/integration/*.test.js"
@@ -20,6 +20,7 @@
     "debug": "^3.1.0",
     "expect": "^22.4.0",
     "express": "^4.16.2",
+    "jsonwebtoken": "^8.2.1",
     "lodash": "^4.17.5",
     "moment": "^2.21.0",
     "morgan": "^1.7.0",
