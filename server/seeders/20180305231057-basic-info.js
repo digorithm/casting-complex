@@ -2,7 +2,7 @@
 
 var fs = require("fs");
 
-var seeds = fs.readFileSync("./server/seeders/seed.json")
+var seeds = fs.readFileSync("./seeders/seed.json")
 
 seeds = JSON.parse(seeds)
 
@@ -35,7 +35,7 @@ module.exports = {
 
     await queryInterface.bulkInsert('AuditionRequestStatuses', seeds["AuditionRequestStatuses"])
 
-    var countries = JSON.parse(fs.readFileSync("./server/seeders/utils/countries.json"));
+    var countries = JSON.parse(fs.readFileSync("./seeders/utils/countries.json"));
 
     // Add countries and their cities
     var cities = []
