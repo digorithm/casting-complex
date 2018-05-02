@@ -1,5 +1,5 @@
 <template>
-   <v-toolbar app class="primary" absolute dense prominent extended>
+  <v-toolbar app class="primary hidden-sm-and-down" absolute dense prominent>
     <v-toolbar-title class="centered"> Casting Complex </v-toolbar-title>
     <v-spacer></v-spacer>
     <v-toolbar-items class="main-toolbar" slot="extension">
@@ -8,7 +8,7 @@
         v-for="item in menuItems"
         :key="item.title"
         :to="item.path">
-        <v-icon left dark>{{ item.icon }}</v-icon>
+        <v-icon class="hidden-sm-and-down" left dark>{{ item.icon }}</v-icon>
         {{ item.title }}
       </v-btn>
     </v-toolbar-items>
