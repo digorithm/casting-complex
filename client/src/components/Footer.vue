@@ -18,15 +18,13 @@
 
 <script>
 export default {
-  data () {
-    return {
+    data: () => ({
       links: [
         { title: 'Terms and conditions', path: '/terms' },
         { title: 'Privacy policy', path: '/policy' },
         { title: 'Parlez-vous francais', path: '/french' }
-      ]
-    }
-  }
+    ]
+  }) 
 }
 </script>
 

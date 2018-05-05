@@ -14,7 +14,7 @@ var HandleSequelizeError = utils.HandleSequelizeError;
 router.get('/', async function(req, res) {
   var extras = {};
 
-  var model = ["Ethnicity", "Credit", "Hair", "Role", "RosterType", "Union", "Gender", "Eye", "Country", "CastingSpecialization", "BreakdownStatus", "AuditionStatus", "AuditionRequestStatus", "AgencyDivision"];
+  var model = ["Ethnicity", "Credit", "Hair", "Role", "RosterType", "Union", "Gender", "Eye", "CastingSpecialization", "BreakdownStatus", "AuditionStatus", "AuditionRequestStatus", "AgencyDivision"];
 
   for (m of model) {
     extras[m] = await models[m].findAll({attributes: ['id', 'name']})
@@ -33,6 +33,16 @@ router.get('/cities/:country_id', async function(req, res) {
   }).map(c => c.toJSON());
   
   return ReS(res, {data: cities}, 200)
+
+});
+
+router.get('/countries/', async function(req, res) {
+
+  var countries = await models.Country.findAll({
+    attributes: ['id', 'name']
+  }).map(c => c.toJSON());
+  
+  return ReS(res, {data: countries}, 200)
 
 });
 

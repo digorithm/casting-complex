@@ -139,6 +139,7 @@ export default {
     getCities (context) {
       Axios.get(`${CastingComplexAPI}/extras/cities/28`)
         .then((data) => {
+          console.log(data.name)
           this.cities = data.data
         }).catch((err) => {
           console.log(err)

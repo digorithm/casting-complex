@@ -17,7 +17,7 @@
             </v-layout>
             <v-layout row justify-center>
               <v-card-actions>
-                <v-btn class="role-btn" color="primary">Actor</v-btn>
+                <v-btn class="role-btn" to="/join-actor" color="primary">Actor</v-btn>
                 <v-btn class="role-btn" color="primary">Casting Director</v-btn>
                 <v-btn class="role-btn" color="primary">Agent</v-btn>
               </v-card-actions>
@@ -40,6 +40,7 @@
         </v-flex>
       </v-container>
     </v-content>
+    <app-footer></app-footer>
 </main>
 </template>
 

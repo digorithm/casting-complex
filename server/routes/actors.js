@@ -42,7 +42,7 @@ router.post('/', async function(req, res) {
   try {
     var user = await models.User.create(req.body.user)
   } catch (e) {
-    return HandleSequelizeError(res, e)
+    return ReE(res, e.errors[0].message, 400)
   }
   
   // Add user id to request object
@@ -54,6 +54,7 @@ router.post('/', async function(req, res) {
     await actor.setUnions(req.body.unionId);
     var sessionToken = await actor.createSession();
   } catch (e) {
+    console.log(e)
     return HandleSequelizeError(res, e)
   }
 

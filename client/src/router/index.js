@@ -4,6 +4,7 @@ import Router from 'vue-router'
 import Authentication from '@/components/pages/Authentication/Authentication'
 import Home from '@/components/pages/Home'
 import Join from '@/components/pages/Join'
+import JoinActor from '@/components/pages/JoinActor'
 
 // Global components
 import Header from '@/components/Header'
@@ -38,6 +39,15 @@ export default new Router({
       name: 'Join',
       components: {
         default: Join,
+        header: Header,
+        footer: Footer
+      }
+    },
+    {
+      path: '/join-actor',
+      name: 'JoinActor',
+      components: {
+        default: JoinActor,
         header: Header,
         footer: Footer
       }
