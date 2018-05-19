@@ -23,8 +23,9 @@ router.post('/login', async function(req, res) {
   var username = req.body.username;
   var password = req.body.password;
 
+
   var user = await models.User.findOne({
-    where: {username: username}
+    where: { $or: [{username: username}, {email: username}] }
   });
   
   if (user === null) {
@@ -41,16 +42,16 @@ router.post('/login', async function(req, res) {
   if (roleId == 1) {
     var userRole = await models.Actor.findOne( { where: { userId: user.id } } )
   } else if (roleId == 2) {
-    var userRole = await models.Agent.findOne( { where: { userId: user.id } } )
-  } else {
     var userRole = await models.CastingDirector.findOne( { where: { userId: user.id } } )
+  } else {
+    var userRole = await models.Agent.findOne( { where: { userId: user.id } } )
   }
 
   var sessionToken = await userRole.createSession();
 
-  // TODO: Maybe load the user's profile?? Should we return it here?
+  var profile = await userRole.buildResponse()
   
-  return ReS(res, {auth: true, session_token: sessionToken}, 200);
+  return ReS(res, {auth: true, session_token: sessionToken, profile: profile}, 200);
 
 });
 

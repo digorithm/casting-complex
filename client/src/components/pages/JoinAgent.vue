@@ -12,7 +12,7 @@
             <v-layout row justify-center>
               <v-card-title primary-title>
                 <div>
-                  <h3 class="headline">Joining as actor</h3>
+                  <h3 class="headline">Joining as agent</h3>
                 </div>
               </v-card-title>
             </v-layout>
@@ -66,18 +66,26 @@
                     @blur="$v.selectedCountry.$touch()"
                     required
                   ></v-select>
+                  <v-text-field
+                    label="Agency name"
+                    name="name"
+                    v-model="agencyName"
+                    :error-messages="agencyNameErrors"
+                    @input="$v.agencyName.$touch()"
+                    @blur="$v.agencyName.$touch()"
+                    required
+                  ></v-text-field>
                   <v-select
                     autocomplete
-                    :items="Cities"
+                    :items="AgencyDivisions"
                     item-text="name"
                     item-value="id"
-                    v-model="selectedCity"
-                    :disabled="!countrySelected"
-                    label="City"
-                    single-line
-                    :error-messages="cityErrors"
-                    @input="$v.selectedCity.$touch()"
-                    @blur="$v.selectedCity.$touch()"
+                    v-model="selectedDivisions"
+                    label="Agency divisions"
+                    multiple
+                    :error-messages="agencyDivisionErrors"
+                    @input="$v.selectedDivisions.$touch()"
+                    @blur="$v.selectedDivisions.$touch()"
                     required
                   ></v-select>
                   <v-text-field
@@ -89,28 +97,8 @@
                     @blur="$v.username.$touch()"
                     required
                   ></v-text-field>
-                  <v-text-field
-                    v-model="password"
-                    :append-icon="e1 ? 'visibility' : 'visibility_off'"
-                    :append-icon-cb="() => (e1 = !e1)"
-                    :type="e1 ? 'password' : 'text'"
-                    name="password"
-                    label="Password"
-                    hint="At least 6 characters"
-                    min="6"
-                    counter
-                    :error-messages="passwordErrors"
-                    @input="$v.password.$touch()"
-                    @blur="$v.password.$touch()"
-                    required
-                  ></v-text-field>
                   <v-spacer></v-spacer>
-                  <v-checkbox
-                    label="I have an agent"
-                    v-model="isRepresented"
-                  ></v-checkbox>
                   <v-layout row justify-content-start>
-                  <v-btn class="small-btn" block color="primary" @click="submit" :disabled="!valid" >Proceed to payment</v-btn>
                   <v-snackbar
                     :timeout="timeout"
                     :color="color"
@@ -153,40 +141,63 @@
                     @blur="$v.streetAddress.$touch()"
                     required
                   ></v-text-field>
-                  <v-text-field
-                    label="Suite/Apt"
-                    name="number"
-                    v-model="suite"
-                    required
-                  ></v-text-field>
                   <v-text-field name="zip" label="Zip/Postal-code" v-model="postalCode" :error-messages="postalCodeErrors"
                     @input="$v.postalCode.$touch()"
                     @blur="$v.postalCode.$touch()" required ></v-text-field>
-                   <v-select
-                    :items="Credits"
-                    v-model="selectedCredits"
-                    label="Credits"
-                    item-text="name"
-                    item-value="id"
-                    multiple
-                    max-height="400"
-                    hint="Pick your credits"
-                    persistent-hint
-                  ></v-select>
                   <v-select
-                    :items="Unions"
-                    v-model="selectedUnions"
-                    label="Unions"
+                  autocomplete
+                  :items="Cities"
+                  item-text="name"
+                  item-value="id"
+                  v-model="selectedCity"
+                  :disabled="!countrySelected"
+                  label="City"
+                  single-line
+                  :error-messages="cityErrors"
+                  @input="$v.selectedCity.$touch()"
+                  @blur="$v.selectedCity.$touch()"
+                  required
+                  ></v-select>
+                  <v-text-field
+                    label="Job title or position"
+                    name="name"
+                    v-model="position"
+                    :error-messages="positionErrors"
+                    @input="$v.position.$touch()"
+                    @blur="$v.position.$touch()"
+                    required
+                  ></v-text-field>
+                  <v-select
+                    autocomplete
+                    :items="RosterTypes"
                     item-text="name"
                     item-value="id"
+                    v-model="selectedRosterTypes"
+                    label="Roster types"
                     multiple
-                    max-height="400"
-                    hint="Pick your unions"
-                    persistent-hint
+                    :error-messages="rosterTypeErrors"
+                    @input="$v.selectedRosterTypes.$touch()"
+                    @blur="$v.selectedRosterTypes.$touch()"
+                    required
                   ></v-select>
-                   <v-text-field name="firstname" label="Name of your agent" v-if="isRepresented" v-model="agentName" required></v-text-field>
+                  <v-text-field
+                    v-model="password"
+                    :append-icon="e1 ? 'visibility' : 'visibility_off'"
+                    :append-icon-cb="() => (e1 = !e1)"
+                    :type="e1 ? 'password' : 'text'"
+                    name="password"
+                    label="Password"
+                    hint="At least 6 characters"
+                    min="6"
+                    counter
+                    :error-messages="passwordErrors"
+                    @input="$v.password.$touch()"
+                    @blur="$v.password.$touch()"
+                    required
+                  ></v-text-field>
                 </v-flex>
               </v-layout>
+              <v-btn class="small-btn" block color="primary" @click="submit" :disabled="!valid" >Proceed</v-btn>
             </v-form>
           </v-card>
         </v-flex>
@@ -198,9 +209,9 @@
 
 <script>
 import Axios from 'axios'
-import { isLoggedIn, isActor } from '@/components/authentication'
 import { validationMixin } from 'vuelidate'
 import { required, minLength, maxLength, email } from 'vuelidate/lib/validators'
+import { isLoggedIn, isAgent } from '@/components/authentication'
 
 const CastingComplexAPI = `http://${window.location.hostname}:5050`
 
@@ -212,9 +223,12 @@ export default {
     phone: { required },
     streetAddress: { required },
     postalCode: { required },
-    suite: { required },
     selectedCountry: { required },
     selectedCity: { required },
+    selectedDivisions: { required },
+    selectedRosterTypes: { required },
+    agencyName: { required },
+    position: { required },
     lastName: { required, maxLength: maxLength(20) },
     legalName: { required, maxLength: maxLength(70) },
     email: { required,
@@ -316,6 +330,30 @@ export default {
       if (!this.$v.selectedCity.$dirty) return errors
       !this.$v.selectedCity.required && errors.push('City is required')
       return errors
+    },
+    agencyNameErrors () {
+      const errors = []
+      if (!this.$v.agencyName.$dirty) return errors
+      !this.$v.agencyName.required && errors.push('Agency name is required')
+      return errors
+    },
+    positionErrors () {
+      const errors = []
+      if (!this.$v.position.$dirty) return errors
+      !this.$v.position.required && errors.push('Position is required')
+      return errors
+    },
+    agencyDivisionErrors () {
+      const errors = []
+      if (!this.$v.selectedDivisions.$dirty) return errors
+      !this.$v.selectedDivisions.required && errors.push('This is required')
+      return errors
+    },
+    rosterTypeErrors () {
+      const errors = []
+      if (!this.$v.selectedRosterTypes.$dirty) return errors
+      !this.$v.selectedRosterTypes.required && errors.push('This is required')
+      return errors
     }
   },
   data: () => ({
@@ -326,51 +364,44 @@ export default {
     timeout: 6000,
     errorMessage: 'Hello, I\'m a snackbar',
     e1: false,
-    selectedCredits: [],
-    selectedUnions: [],
     username: '',
     password: '',
     postalCode: '',
     firstName: '',
     middleName: '',
     lastName: '',
-    agentName: '',
-    isRepresented: false,
     legalName: '',
     phone: '',
     email: '',
     streetAddress: '',
-    suite: '',
     selectedCity: [],
     Cities: [],
+    agencyName: '',
+    position: '',
     countrySelected: false,
     selectedCountry: [],
+    AgencyDivisions: [],
+    RosterTypes: [],
+    selectedDivisions: [],
+    selectedRosterTypes: [],
     Countries: [],
-    Credits: [],
-    Unions: [],
     enabled: false,
     valid: false,
     name: ''
   }),
   beforeCreate () {
-    // Redirect user to payment form if they already created account but didn't pay
+    var referencesSent = localStorage.getItem('references_sent')
     if (isLoggedIn()) {
-      if (!isActor()) {
-        // What are you even doing here?
+      if (!isAgent()) {
         this.$router.push('/')
       } else {
-        // TODO: This should be retrieved from backend
-        var didUserPay = localStorage.getItem('did_user_pay')
-        if (didUserPay === 'false') {
-          // Redirect to main page if user is logged in, is an actor, and has NOT paid
-          this.$router.push('/payment')
+        if (referencesSent === 'false' || referencesSent === null) {
+          this.$router.push('/references')
         } else {
-          // Redirect to main page if user is logged in, is an actor, and has paid
           this.$router.push('/')
         }
       }
     }
-    // Proceed with rendering if user isn't logged
   },
   mounted () {
     // Initially load all countries
@@ -399,6 +430,8 @@ export default {
         .then((data) => {
           this.Credits = data.data.data['Credit']
           this.Unions = data.data.data['Union']
+          this.AgencyDivisions = data.data.data['AgencyDivision']
+          this.RosterTypes = data.data.data['RosterType']
         }).catch((err) => {
           console.log(err)
         })
@@ -428,12 +461,13 @@ export default {
       this.$v.$touch()
       // If all fields are valid, submit request
       if (!this.$v.$error) {
-        this.signUpActor().then(data => {
+        this.signUpAgent().then(data => {
           // If all went smoothly, add session token to browser in order to keep session
           localStorage.setItem('session_token', data.data.session_token)
           localStorage.setItem('logged_profile', JSON.stringify(data.data.data))
-          localStorage.setItem('did_user_pay', false)
-          this.$router.push('/payment')
+          localStorage.setItem('references_sent', false)
+
+          this.$router.push('/references')
         }).catch(e => {
           // If something went wrong, we use a snackbar to show the error
           this.snackbar = true
@@ -441,30 +475,30 @@ export default {
         })
       }
     },
-    signUpActor () {
-      var signUpActor = {
+    signUpAgent () {
+      var signUpAgent = {
         user: {
           username: this.username,
           email: this.email,
-          roleId: 1,
+          roleId: 3,
           password: this.password
         },
         firstName: this.firstName,
         middleName: this.middleName,
         lastName: this.lastName,
         legalName: this.legalName,
-        streetAddress: this.streetAddress,
         zipPostal: this.postalCode,
-        phone: this.phone,
-        mobile: this.phone,
-        suite: this.suite,
-        isRepresented: this.isRepresented,
         cityId: this.selectedCity,
         countryId: this.selectedCountry,
-        creditId: this.selectedCredits,
-        unionId: this.selectedUnions
+        agencyName: this.agencyName,
+        position: this.position,
+        streetAddress: this.streetAddress,
+        phone: this.phone,
+        mobile: this.phone,
+        agencyDivisionId: this.selectedDivisions,
+        rosterTypeId: this.selectedRosterTypes
       }
-      return Axios.post(`${CastingComplexAPI}/actors`, signUpActor).then(function (response) {
+      return Axios.post(`${CastingComplexAPI}/agents`, signUpAgent).then(function (response) {
         return response
       })
         .catch(function (error) {
@@ -503,7 +537,7 @@ export default {
   }
   .content {
       padding-top: $content-padding-top;
-      padding-bottom: $content-padding-top;
+      padding-bottom: $content-padding-bottom;
     }
 
   @media screen and (max-width: 960px){

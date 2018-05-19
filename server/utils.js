@@ -7,6 +7,7 @@ module.exports = {
         err.error = err.error;
     }
     if(typeof code !== 'undefined') res.statusCode = code;
+    console.log(err)
     return res.json({success:false, error: err});
   },
 

@@ -2,6 +2,7 @@
  <main app class="l-home-page">
     <app-header></app-header>
     <app-mobile-header></app-mobile-header>
+    <login-modal></login-modal>
      <v-content>
       <v-container fluid grid-list-md text-xs-center>
         <v-layout row wrap justify-space-around>
@@ -37,13 +38,13 @@
                     </v-flex>
                   </v-layout>
                   <v-card-text>
+                    <!--{{ role() }}-->
                     <p>
                       Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla condimentum lacus ut risus suscipit consequat ac sed nisl. Ut volutpat urna non est bibendum pretium. Maecenas luctus cursus tellus ut porttitor. Phasellus commodo neque nulla. Donec hendrerit a mi at congue. Fusce vel felis auctor, consequat erat non, pretium justo. Nulla egestas justo eu orci fringilla, eget venenatis risus scelerisque. Morbi interdum ligula mi, tempus tempus mi interdum nec. Ut suscipit neque orci, ac rutrum risus cursus et. Curabitur vel odio massa. Integer viverra sem sed massa ullamcorper ultricies. Pellentesque ultrices massa eget mi blandit, placerat convallis risus ullamcorper. Vestibulum nec sapien vehicula, pellentesque tellus non, varius lorem.
                     </p>
                     <p>
                       Nulla egestas justo eu orci fringilla, eget venenatis risus scelerisque. Morbi interdum ligula mi, tempus tempus mi interdum nec. Ut suscipit neque orci, ac rutrum risus cursus et. Curabitur vel odio massa. Integer viverra sem sed massa ullamcorper ultricies. Pellentesque ultrices massa eget mi blandit, placerat convallis risus ullamcorper. Vestibulum nec sapien vehicula, pellentesque tellus non, varius lorem.
                     </p>
-                    
                   </v-card-text>
                 </v-card>
               </v-flex>
@@ -95,23 +96,35 @@
 </template>
 
 <script>
-// import Authentication from '@/components/pages/Authentication'
-import Axios from 'axios'
-const CastingComplexAPI = `http://${window.location.hostname}:5050`
-
 export default {
   data () {
     return {
       featuredActor: {
         id: 1,
         name: 'Jane Doe',
-        credits: "Actor, Singer, Dancer",
-        previousProjects: "Awesome TV Show, Great Movie 2",
-        shortBio: "Passionate about film industry and acting",
-        path: "/static/img/actor3.jpg",
-        profile: "/"
+        credits: 'Actor, Singer, Dancer',
+        previousProjects: 'Awesome TV Show, Great Movie 2',
+        shortBio: 'Passionate about film industry and acting',
+        path: '/static/img/actor3.jpg',
+        profile: '/'
       },
       cities: [],
+      role: function () {
+        var logged = localStorage.getItem('logged_profile')
+        if (logged !== null) {
+          var roleId = JSON.parse(localStorage.getItem('logged_profile')).user.roleId
+
+          if (roleId === 1) {
+            return 'Actor'
+          } else if (roleId === 2) {
+            return 'Agent'
+          } else {
+            return 'Casting Director'
+          }
+        } else {
+          return 'No session'
+        }
+      },
       list: [
         {
           id: 1,
@@ -133,37 +146,27 @@ export default {
     }
   },
   mounted () {
-    this.getCities()
   },
   methods: {
-    getCities (context) {
-      Axios.get(`${CastingComplexAPI}/extras/cities/28`)
-        .then((data) => {
-          console.log(data.name)
-          this.cities = data.data
-        }).catch((err) => {
-          console.log(err)
-        })
-    }
   }
 }
 </script>
 
 <style lang="scss">
   @import "./../../assets/styles";
-  
+
   .content {
-      padding-top: 200px !important;
-      padding-bottom: 150px !important;
+      padding-top: $content-padding-top;
+      padding-bottom: $content-padding-bottom;
     }
 
   @media screen and (max-width: 960px){
     .content {
       padding-top: 0px !important;
       padding-bottom: 150px !important;
-    }  
+    }
   }
-  
+
   .card__text {
     color: black !important;
     text-align: left !important;

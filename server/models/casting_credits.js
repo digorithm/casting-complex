@@ -8,6 +8,8 @@ module.exports = (sequelize, DataTypes) => {
       classMethods: {
         associate: function(models) {
           CastingCredit.belongsTo(models.CastingDirector, { as: "castingDirector"})
+          
+          CastingCredit.belongsTo(models.CastingSpecialization, { as: "creditType"})
       }
     }
   });

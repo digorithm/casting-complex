@@ -29,6 +29,7 @@ router.get('/', async function(req, res) {
 });
 
 router.get('/:actor_id', async function(req, res) {
+  console.log("I should NOT be here")
   var actorId = req.params.actor_id;
   var actor = await models.Actor.findById(actorId);
   var actorJson = await actor.buildResponse();
@@ -42,7 +43,7 @@ router.post('/', async function(req, res) {
   try {
     var user = await models.User.create(req.body.user)
   } catch (e) {
-    return ReE(res, e.errors[0].message, 400)
+    return HandleSequelizeError(res, e)
   }
   
   // Add user id to request object
@@ -158,6 +159,29 @@ router.delete('/agents', VerifyToken, async function(req, res) {
     return ReE(res, {error: e}, 500);
   }
 
+});
+
+router.get('/:actor_id/auditions', VerifyToken, async function(req, res) {
+
+  if (req.params.actor_id != req.userId) {
+    return ReE(res, {error: "Bad request"}, 404) 
+  }
+  
+  var actor = await models.Actor.findById(req.userId);
+  if (actor == null) return ReE(res, {error: "Actor not found"}, 404)
+
+  try {
+    var auditions = await models.Audition.findAll(
+      {
+        where: {ActorId: actor.id}
+      }
+    );
+    var auditionsJson = auditions.map(a => a.toJSON());
+    
+    return ReS(res, auditionsJson, 200)
+  } catch (e) {
+    return ReE(res, {error: e}, 500)
+  }
 });
 
 module.exports = router;

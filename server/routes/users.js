@@ -12,6 +12,37 @@ var ErrorMessage = utils.ErrorMessage;
 
 
 router.get('/', async function(req, res) {
+
+  var username = req.query.username;
+  
+  if (username !== 'undefined' && username ) {
+    user = await models.User.findOne({
+      where: { username: username }
+    });
+    
+    if (user == null) {
+      return ReE(res, 'User not found', 404)
+    }
+    
+    var userJson = await user.buildResponse();
+    return ReS(res, {data: userJson}, 200)
+  }
+
+  var email = req.query.email;
+
+  if (email !== 'undefined' && email ) {
+    user = await models.User.findOne({
+      where: { email: email }
+    });
+    
+    if (user == null) {
+      return ReE(res, 'User not found', 404)
+    }
+    
+    var userJson = await user.buildResponse();
+    return ReS(res, {data: userJson}, 200)
+  }
+
   var users = await models.User.findAll()
   
   userJsonPromises = [];
@@ -24,6 +55,8 @@ router.get('/', async function(req, res) {
     return ReS(res, {data: usersJson}, 200);
   });
 });
+
+// TODO: endpoint to check if username or email is unique. Make it two optional query string in the previous endpoint!
 
 router.get('/:user_id', async function (req, res) {
   var user = await models.User.findById(req.params.user_id);

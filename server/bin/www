@@ -20,7 +20,8 @@ app.set('port', port);
    */
 var server = http.createServer(app);
 
-models.sequelize.sync({force: true}).then(function() {
+// add {force: true} to sync() to delete everything from the db when the server starts
+models.sequelize.sync().then(function() {
   /**
    * Listen on provided port, on all network interfaces.
    */

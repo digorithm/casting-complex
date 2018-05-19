@@ -101,4 +101,75 @@ router.delete('/', VerifyToken, async function(req, res) {
   
 })
 
+router.post('/references', VerifyToken, async function(req, res) {
+   
+  try {
+    var castingDirector = await models.CastingDirector.findById(req.userId);
+    var user = await castingDirector.getUser();
+
+    var references = req.body.references;
+    var referenceModels = []
+
+    for (reference of references) {
+      var refObj = await models.Reference.create(reference)
+      referenceModels.push(refObj)
+    }
+    
+    await user.setReferences(referenceModels);
+
+  } catch(e) {
+    console.log(e)
+    return HandleSequelizeError(res, e);
+  }
+  return ReS(res, {message: "References added"}, 201);
+
+})
+
+router.get('/:casting_director_id/references', async function(req, res) {
+   
+  try {
+    var castingDirector = await models.CastingDirector.findById(req.params.casting_director_id);
+    var user = await castingDirector.getUser();
+    var references = await user.getReferences();
+
+  } catch(e) {
+    return HandleSequelizeError(res, e);
+  }
+  return ReS(res, {data: references}, 200);
+  
+})
+
+router.post('/credits', VerifyToken, async function(req, res) {
+   
+  try {
+    var castingDirector = await models.CastingDirector.findById(req.userId);
+
+    var credits = req.body.credits;
+
+    for (credit of credits) {
+      await models.CastingCredit.create(credit)
+    }
+
+  } catch(e) {
+    console.log(e)
+    return HandleSequelizeError(res, e);
+  }
+  return ReS(res, {message: "Credits added"}, 201);
+
+})
+
+router.get('/:casting_director_id/credits', async function(req, res) {
+   
+  try {
+    var castingDirector = await models.CastingDirector.findById(req.params.casting_director_id);
+    
+    var credits = await models.CastingCredit.findAll({where: {castingDirectorId: castingDirector.id }})
+
+  } catch(e) {
+    return HandleSequelizeError(res, e);
+  }
+  return ReS(res, {data: credits}, 200);
+  
+})
+
 module.exports = router;

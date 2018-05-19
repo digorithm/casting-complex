@@ -1,0 +1,99 @@
+<template>
+  <v-card>
+    <v-card-title primary class="title">
+      Auditions
+    </v-card-title>
+    <v-divider></v-divider>
+    <v-card-text class="card-text-mod">
+      <v-data-table
+        :headers="headers"
+        :items="auditions"
+        hide-actions
+      >
+        <template slot="items" slot-scope="props">
+          
+          <td>{{ props.item.breakdown }}</td>
+          <td class="text-xs-left">{{ props.item.address }}</td>
+          <td class="text-xs-left">{{ props.item.date }}</td>
+          
+        </template>
+      </v-data-table>
+       <v-card-actions>
+      <v-btn color="primary" block small>View all auditions</v-btn>
+    </v-card-actions>
+    </v-card-text>
+  </v-card>
+</template>
+
+<script>
+import {bus} from '../main'
+import Axios from 'axios'
+import { logout, isLoggedIn, isActor } from '@/components/authentication'
+const CastingComplexAPI = `http://${window.location.hostname}:5050`
+
+export default {
+  data () {
+    return {
+      headers: [{
+            text: 'Project',
+            align: 'left',
+            sortable: false,
+            value: 'breakdown'
+          },
+          { text: 'Address', value: 'address' },
+          { text: 'Date', value: 'date' }],
+      auditions: [],
+      mockAuditions: [
+        {
+          breakdown: 'Cool project',
+          address: '1988 stephens street',
+          date: 'Jun 8 2018, 3pm',
+          director: 'The director name'
+        },
+        {
+          breakdown: 'Another project',
+          address: '2033 random address',
+          date: 'Jun 9 2018, 3pm',
+          director: 'The director name'
+        },
+        {
+          breakdown: 'Yet another project',
+          address: '1866 random street',
+          date: 'Jun 10 2018, 3pm',
+          director: 'The director name'
+        },
+      ]
+    }
+  },
+  mounted () {
+    this.fetchAuditions()
+  },
+  methods: {
+    editItem(item) {
+      console.log("I have been clicked on")
+    },
+    fetchAuditions() {
+      var config = { 
+        headers: {
+          'x-access-token': localStorage.getItem('session_token'),
+          'Content-Type': undefined
+          }
+      }
+      var actorId = JSON.parse(localStorage.getItem('logged_profile')).id
+      Axios.get(`${CastingComplexAPI}/actors/${actorId}/auditions`, config).then((response) => {
+        this.auditions = this.mockAuditions;
+      }).catch( error => { console.log(error); });
+    }
+  }
+}
+</script>
+
+<style lang="scss">
+  @import "./../assets/styles";
+
+  .card-text-mod {
+    padding: 0 !important;
+  }
+
+  
+</style>

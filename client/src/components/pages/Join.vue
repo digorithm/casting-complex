@@ -2,9 +2,10 @@
  <main app>
     <app-header></app-header>
     <app-mobile-header></app-mobile-header>
+    <login-modal></login-modal>
     <v-content>
       <v-container fluid grid-list-md text-xs-center>
-        <v-flex xs12 sm4 offset-sm4>
+        <v-flex xs12 sm4 md6 lg6 xl4 offset-sm3 offset-xl4>
           <v-card>
             <v-card-media src="/static/img/join.jpg" height="200px">
             </v-card-media>
@@ -18,8 +19,8 @@
             <v-layout row justify-center>
               <v-card-actions>
                 <v-btn class="role-btn" to="/join-actor" color="primary">Actor</v-btn>
-                <v-btn class="role-btn" color="primary">Casting Director</v-btn>
-                <v-btn class="role-btn" color="primary">Agent</v-btn>
+                <v-btn class="role-btn" to="/join-director" color="primary">Casting Director</v-btn>
+                <v-btn class="role-btn" to="/join-agent" color="primary">Agent</v-btn>
               </v-card-actions>
             </v-layout>
             <v-card-text>
@@ -46,50 +47,47 @@
 
 <script>
 // import Authentication from '@/components/pages/Authentication'
-import Axios from 'axios'
-const CastingComplexAPI = `http://${window.location.hostname}:5050`
-
 export default {
-    data: () => ({
-      show: false
-    })
-  }
+  data: () => ({
+    show: false
+  })
+}
 </script>
 
 <style lang="scss">
-  @import "./../../assets/styles";
-  
+@import "./../../assets/styles";
+
+.role-btn {
+  font-size: 14px !important;
+}
+
+@media screen and (max-width: 600px){
   .role-btn {
-    font-size: 14px !important;
+    font-size: 12px !important;
+  }
+}
+.content {
+    padding-top: $content-padding-top;
+    padding-bottom: $content-padding-top;
   }
 
-  @media screen and (max-width: 600px){
-    .role-btn {
-      font-size: 12px !important;
-    }
-  }
+@media screen and (max-width: 960px){
   .content {
-      padding-top: 200px !important;
-      padding-bottom: 150px !important;
-    }
+    padding-top: 0px !important;
+    padding-bottom: 150px !important;
+  }
+}
+.fa-question-circle {
+  color: $background-color !important;
+  font-size: 32px !important;
+}
 
-  @media screen and (max-width: 960px){
-    .content {
-      padding-top: 0px !important;
-      padding-bottom: 150px !important;
-    }  
-  }
-  .fa-question-circle {
-    color: $background-color !important;
-    font-size: 32px !important;
-  }
-  
-  .card__text {
-    color: black !important;
-    text-align: left !important;
-  }
-  .profile-btn {
-    width: 100px !important;
-    height: 100px !important;
-  }
+.card__text {
+  color: black !important;
+  text-align: left !important;
+}
+.profile-btn {
+  width: 100px !important;
+  height: 100px !important;
+}
 </style>

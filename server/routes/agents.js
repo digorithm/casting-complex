@@ -178,4 +178,42 @@ router.get('/:agent_id/actors', async function(req, res) {
   }
 });
 
+router.post('/references', VerifyToken, async function(req, res) {
+   
+  try {
+    var agent = await models.Agent.findById(req.userId);
+    var user = await agent.getUser();
+
+    var references = req.body.references;
+    var referenceModels = []
+
+    for (reference of references) {
+      var refObj = await models.Reference.create(reference)
+      referenceModels.push(refObj)
+    }
+    
+    await user.setReferences(referenceModels);
+
+  } catch(e) {
+    console.log(e)
+    return HandleSequelizeError(res, e);
+  }
+  return ReS(res, {message: "References added"}, 201);
+
+})
+
+router.get('/:agent_id/references', async function(req, res) {
+   
+  try {
+    var agent = await models.Agent.findById(req.params.agent_id);
+    var user = await agent.getUser();
+    var references = await user.getReferences();
+
+  } catch(e) {
+    return HandleSequelizeError(res, e);
+  }
+  return ReS(res, {data: references}, 200);
+  
+})
+
 module.exports = router;

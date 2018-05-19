@@ -4,8 +4,8 @@
       <v-btn
         color="white"
         flat
-        v-for="link in links"
-        :key="link"
+        v-for="(link, index) in links"
+        :key="index"
       >
         {{ link.title }}
       </v-btn>
@@ -18,13 +18,13 @@
 
 <script>
 export default {
-    data: () => ({
-      links: [
-        { title: 'Terms and conditions', path: '/terms' },
-        { title: 'Privacy policy', path: '/policy' },
-        { title: 'Parlez-vous francais', path: '/french' }
+  data: () => ({
+    links: [
+      { title: 'Terms and conditions', path: '/terms' },
+      { title: 'Privacy policy', path: '/policy' },
+      { title: 'Parlez-vous francais', path: '/french' }
     ]
-  }) 
+  })
 }
 </script>
 

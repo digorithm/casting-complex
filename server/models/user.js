@@ -30,7 +30,9 @@ module.exports = (sequelize, DataTypes) => {
         });
 
         User.hasMany(models.Reference, {
-          as: "References"
+          as: "References",
+          onDelete: "cascade",
+          hooks: true
         });
 
         User.belongsToMany(models.Message, {
