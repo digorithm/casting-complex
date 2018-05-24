@@ -19,7 +19,6 @@
         sm12
         md12
         lg12
-        
       >
         <v-card flat>
           <v-card-title><h4>{{ props.item.name }}</h4></v-card-title>
@@ -33,9 +32,9 @@
 </template>
 
 <script>
-import {bus} from '../main'
 
 export default {
+  // TODO: Add news endpoint and call it here. This table on the database will be populated by an admin through an UI that I will create later.
   data () {
     return {
       rowsPerPageItems: [1, 4, 8, 12],
@@ -45,14 +44,13 @@ export default {
       newsMock: [
         {
           name: 'News headline',
-          news: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla condimentum lacus ut risus suscipit consequat ac sed nisl. Ut volutpat urna non est bibendum pretium. Maecenas luctus cursus tellus ut porttitor. Phasellus commodo neque nulla Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla condimentum lacus ut risus suscipit consequat ac sed nisl. Ut volutpat urna non est bibendum pretium. Maecenas luctus cursus tellus ut porttitor. Phasellus commodo neque nulla, Phasellus commodo neque nulla Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla condimentum lacus ut risus suscipit consequat ac sed nisl. Ut volutpat urna non est bibendum pretium. Maecenas luctus cursus tellus ut porttitor. Phasellus commodo neque nulla Maecenas luctus cursus tellus ut porttitor. Phasellus commodo neque nulla',
+          news: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla condimentum lacus ut risus suscipit consequat ac sed nisl. Ut volutpat urna non est bibendum pretium. Maecenas luctus cursus tellus ut porttitor. Phasellus commodo neque nulla Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla condimentum lacus ut risus suscipit consequat ac sed nisl. Ut volutpat urna non est bibendum pretium. Maecenas luctus cursus tellus ut porttitor. Phasellus commodo neque nulla, Phasellus commodo neque nulla Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla condimentum lacus ut risus suscipit consequat ac sed nisl. Ut volutpat urna non est bibendum pretium. Maecenas luctus cursus tellus ut porttitor. Phasellus commodo neque nulla Maecenas luctus cursus tellus ut porttitor. Phasellus commodo neque nulla'
         },
         {
           name: 'News headline 2',
-          news: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla condimentum lacus ut risus suscipit consequat ac sed nisl. Ut volutpat urna non est bibendum pretium. Maecenas luctus cursus tellus ut porttitor. Phasellus commodo neque nulla',
+          news: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla condimentum lacus ut risus suscipit consequat ac sed nisl. Ut volutpat urna non est bibendum pretium. Maecenas luctus cursus tellus ut porttitor. Phasellus commodo neque nulla'
         }
       ]
-      
     }
   },
   methods: {
@@ -66,5 +64,4 @@ export default {
   .list__tile__content {
     text-align: right !important;
   }
-  
 </style>

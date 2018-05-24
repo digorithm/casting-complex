@@ -198,7 +198,7 @@
 
 <script>
 import Axios from 'axios'
-import { isLoggedIn, isActor } from '@/components/authentication'
+import { isLoggedIn, isActor, isRegistrationInProgress } from '@/components/authentication'
 import { validationMixin } from 'vuelidate'
 import { required, minLength, maxLength, email } from 'vuelidate/lib/validators'
 
@@ -359,9 +359,7 @@ export default {
         // What are you even doing here?
         this.$router.push('/')
       } else {
-        // TODO: This should be retrieved from backend
-        var didUserPay = localStorage.getItem('did_user_pay')
-        if (didUserPay === 'false') {
+        if (isRegistrationInProgress()) {
           // Redirect to main page if user is logged in, is an actor, and has NOT paid
           this.$router.push('/payment')
         } else {
@@ -432,7 +430,7 @@ export default {
           // If all went smoothly, add session token to browser in order to keep session
           localStorage.setItem('session_token', data.data.session_token)
           localStorage.setItem('logged_profile', JSON.stringify(data.data.data))
-          localStorage.setItem('did_user_pay', false)
+          localStorage.setItem('registration_in_progress', true)
           this.$router.push('/payment')
         }).catch(e => {
           // If something went wrong, we use a snackbar to show the error

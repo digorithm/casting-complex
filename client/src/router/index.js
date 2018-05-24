@@ -9,6 +9,7 @@ import JoinAgent from '@/components/pages/JoinAgent'
 import Payment from '@/components/pages/Payment'
 import References from '@/components/pages/References'
 import ActorDashboard from '@/components/pages/ActorDashboard'
+import AgentDashboard from '@/components/pages/AgentDashboard'
 import ActorProfile from '@/components/pages/ActorProfile'
 
 // Global components
@@ -96,6 +97,15 @@ export default new Router({
       name: 'References',
       components: {
         default: References,
+        header: Header,
+        footer: Footer
+      }
+    },
+    {
+      path: '/agent-dashboard',
+      name: 'Agent Dashboard',
+      components: {
+        default: AgentDashboard,
         header: Header,
         footer: Footer
       }

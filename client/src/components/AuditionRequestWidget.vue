@@ -7,15 +7,14 @@
     <v-card-text class="card-text-mod">
     <v-data-table
         :headers="headers"
-        :items="mockAuditionRequests"
+        :items="auditionRequests"
+        :no-data-text="noRequests"
         hide-actions
       >
         <template slot="items" slot-scope="props">
-          
           <td>{{ props.item.breakdown }}</td>
           <td class="text-xs-left">{{ props.item.role }}</td>
           <td class="text-xs-left">{{ props.item.status }}</td>
-          
         </template>
       </v-data-table>
     <v-card-actions>
@@ -26,25 +25,24 @@
 </template>
 
 <script>
-import {bus} from '../main'
 import Axios from 'axios'
-import { logout, isLoggedIn, isActor } from '@/components/authentication'
 const CastingComplexAPI = `http://${window.location.hostname}:5050`
 
 export default {
   data () {
     return {
-       pagination: {
+      pagination: {
         rowsPerPage: 4
       },
+      noRequests: 'No requests so far',
       headers: [{
-            text: 'Project',
-            align: 'left',
-            sortable: false,
-            value: 'breakdown'
-          },
-          { text: 'Role', value: 'role' },
-          { text: 'Status', value: 'status' }],
+        text: 'Project',
+        align: 'left',
+        sortable: false,
+        value: 'breakdown'
+      },
+      { text: 'Role', value: 'role' },
+      { text: 'Status', value: 'status' }],
       auditionRequests: [],
       mockAuditionRequests: [
         {
@@ -65,19 +63,31 @@ export default {
           role: 'Role 3',
           status: 'Waiting'
         }
-        
       ]
     }
   },
   mounted () {
     // TODO: fetchAuditionRequests from an actor
+    this.fetchAuditionRequests()
   },
   methods: {
+    fetchAuditionRequests () {
+      var config = {
+        headers: {
+          'x-access-token': localStorage.getItem('session_token'),
+          'Content-Type': undefined
+        }
+      }
+      var actorId = JSON.parse(localStorage.getItem('logged_profile')).id
+      Axios.get(`${CastingComplexAPI}/actors/${actorId}/auditions/requests`, config).then((response) => {
+        console.log(response)
+        this.auditionRequests = response.data
+      }).catch(error => { console.log(error) })
+    }
   }
 }
 </script>
 
 <style lang="scss">
   @import "./../assets/styles";
-
 </style>

@@ -185,7 +185,7 @@
 import Axios from 'axios'
 import { validationMixin } from 'vuelidate'
 import { required, minLength, maxLength, email } from 'vuelidate/lib/validators'
-import { isLoggedIn, isDirector } from '@/components/authentication'
+import { isLoggedIn, isDirector, isRegistrationInProgress } from '@/components/authentication'
 
 const CastingComplexAPI = `http://${window.location.hostname}:5050`
 
@@ -346,12 +346,11 @@ export default {
     name: ''
   }),
   beforeCreate () {
-    var referencesSent = localStorage.getItem('references_sent')
     if (isLoggedIn()) {
       if (!isDirector()) {
         this.$router.push('/')
       } else {
-        if (referencesSent === 'false' || referencesSent === null) {
+        if (isRegistrationInProgress()) {
           this.$router.push('/references')
         } else {
           this.$router.push('/')
@@ -419,6 +418,7 @@ export default {
           // If all went smoothly, add session token to browser in order to keep session
           localStorage.setItem('session_token', data.data.session_token)
           localStorage.setItem('logged_profile', JSON.stringify(data.data.data))
+          localStorage.setItem('registration_in_progress', true)
           this.$router.push('/references')
         }).catch(e => {
           // If something went wrong, we use a snackbar to show the error

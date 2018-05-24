@@ -188,9 +188,9 @@ export default {
     submit () {
       console.log('Skipping payment for now')
       console.log('submitted')
-      localStorage.setItem('did_user_pay', true)
+      localStorage.removeItem('registration_in_progress')
       // TODO: This redirect should be to user's dashboard
-      this.$router.push('/')
+      this.$router.push('/actor-dashboard')
     },
     getYears () {
       var endYear = 10

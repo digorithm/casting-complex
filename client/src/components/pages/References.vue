@@ -259,7 +259,7 @@ export default {
   mounted () {
     this.getExtras()
     var roleId = JSON.parse(localStorage.getItem('logged_profile')).user.roleId
-    this.isDirector = (roleId === 3)
+    this.isDirector = (roleId === 2)
   },
   beforeCreate () {
     if (!isLoggedIn()) {
@@ -348,7 +348,7 @@ export default {
           })
         }
 
-        localStorage.setItem('references_sent', true)
+        localStorage.removeItem('registration_in_progress')
         // TODO: This redirect should be to user's dashboard
         this.$router.push('/')
       }

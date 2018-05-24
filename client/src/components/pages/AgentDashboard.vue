@@ -37,7 +37,7 @@
 </template>
 
 <script>
-import { isLoggedIn, isRegistrationInProgress, isActor } from '@/components/authentication'
+import { isLoggedIn, isRegistrationInProgress, isAgent } from '@/components/authentication'
 
 export default {
   data () {
@@ -45,7 +45,7 @@ export default {
     }
   },
   beforeCreate () {
-    if (!isLoggedIn() || isRegistrationInProgress() || !isActor()) {
+    if (!isLoggedIn() || isRegistrationInProgress() || !isAgent()) {
       this.$router.push('/')
     }
   },

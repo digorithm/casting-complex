@@ -216,4 +216,36 @@ router.get('/:agent_id/references', async function(req, res) {
   
 })
 
+router.get('/:agent_id/auditions', VerifyToken, async function(req, res) {
+  
+  if (req.params.agent_id != req.userId) {
+    return ReE(res, {error: "Bad request"}, 404) 
+  }
+  
+  var agent = await models.Agent.findById(req.userId);
+  if (agent == null) return ReE(res, {error: "Agent not found"}, 404)
+  
+  var allAuditions = []
+
+  try {
+    agentActors = await agent.getActors();
+    for (actor of agentActors) {
+      var auditions = await models.Audition.findAll(
+        {
+          where: {ActorId: actor.id}
+        }
+      );
+      var auditionsJson = auditions.map(a => { 
+        var j = a.toJSON();
+        j.actor = actor.firstName
+        return j
+      });
+      allAuditions.push(auditionsJson)
+    }
+    return ReS(res, allAuditions, 200)
+  } catch (e) {
+    return ReE(res, {error: e}, 500)
+  }
+});
+
 module.exports = router;

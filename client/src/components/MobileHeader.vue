@@ -16,7 +16,7 @@
           <div slot="header">
             <p class="header-title"> Casting Complex</p>
           </div>
-          <v-btn class="modified-btn-content" v-if="!isLoggedIn()" to='/' flat>
+          <v-btn class="modified-btn-content" v-if="!isLoggedIn() || isRegistrationInProgress()" to='/' flat>
           Home
           </v-btn>
           <v-btn
@@ -27,10 +27,10 @@
             :to="item.path">
             {{ item.title }}
           </v-btn>
-          <v-btn class="modified-btn-content" v-if="!isLoggedIn()" v-on:click.native="openDialog()" flat>
+          <v-btn class="modified-btn-content" v-if="!isLoggedIn() || isRegistrationInProgress()" v-on:click.native="openDialog()" flat>
             Sign in
           </v-btn>
-          <v-btn class="modified-btn-content" v-if="isLoggedIn()" v-on:click.native="logout()" flat>
+          <v-btn class="modified-btn-content" v-if="isLoggedIn() && !isRegistrationInProgress()" v-on:click.native="logout()" flat>
             Sign out
           </v-btn>
         </v-expansion-panel-content>
@@ -40,13 +40,14 @@
 
 <script>
 import {bus} from '../main'
-import { logout, isLoggedIn, isActor } from '@/components/authentication'
+import { logout, isLoggedIn, isRegistrationInProgress, isActor, isAgent } from '@/components/authentication'
 
 export default {
   data () {
     return {
       menuItems: [],
       isLoggedIn: isLoggedIn,
+      isRegistrationInProgress: isRegistrationInProgress,
       loggedInMenuItems: [
         { title: 'Home', path: '/', icon: 'home' },
         { title: 'About us', path: '/about', icon: 'info' },
@@ -83,7 +84,7 @@ export default {
     },
     getCorrectToolbar () {
       // Whenever this is called, it changes the menuItems prop, causing the re-rendering of the toolbar
-      if (!isLoggedIn()) {
+      if (!isLoggedIn() || isRegistrationInProgress()) {
         this.menuItems = [
           { title: 'About us', path: '/about', icon: 'info' },
           { title: 'Pricing', path: '/pricing', icon: 'attach_money' },
@@ -91,10 +92,19 @@ export default {
           { title: 'Join', path: '/join', icon: 'face' }
         ]
       }
-      if (isLoggedIn() && isActor()) {
+      if (isLoggedIn() && isActor() && !isRegistrationInProgress()) {
         this.menuItems = [
-          { title: 'Dashboard', path: '/dashboard', icon: 'dashboard' },
-          { title: 'Profile', path: '/profile', icon: 'person' },
+          { title: 'Dashboard', path: '/actor-dashboard', icon: 'dashboard' },
+          { title: 'Profile', path: '/actor-profile', icon: 'person' },
+          { title: 'Messages', path: '/message', icon: 'message' },
+          { title: 'Job board', path: '/job-board', icon: 'work' }
+        ]
+      }
+      if (isLoggedIn() && isAgent() && !isRegistrationInProgress()) {
+        this.menuItems = [
+          { title: 'Dashboard', path: '/agent-dashboard', icon: 'dashboard' },
+          { title: 'Profile', path: '/agent-profile', icon: 'person' },
+          { title: 'Actors', path: '/manage-actors', icon: 'person' },
           { title: 'Messages', path: '/message', icon: 'message' },
           { title: 'Job board', path: '/job-board', icon: 'work' }
         ]

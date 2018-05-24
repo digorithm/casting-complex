@@ -6,16 +6,30 @@
     <v-divider></v-divider>
     <v-card-text class="card-text-mod">
       <v-data-table
+        :headers="headers2"
+        :items="actorsAuditions"
+        hide-actions
+        :no-data-text="noAuditions"
+        v-if="isAgent"
+      >
+        <template slot="items" slot-scope="props">
+          <td>{{ props.item.breakdown }}</td>
+          <td>{{ props.item.actor }}</td>
+          <td class="text-xs-left">{{ props.item.address }}</td>
+          <td class="text-xs-left">{{ props.item.date }}</td>
+        </template>
+      </v-data-table>
+      <v-data-table
         :headers="headers"
         :items="auditions"
         hide-actions
+        :no-data-text="noAuditions"
+        v-if="isActor"
       >
         <template slot="items" slot-scope="props">
-          
           <td>{{ props.item.breakdown }}</td>
           <td class="text-xs-left">{{ props.item.address }}</td>
           <td class="text-xs-left">{{ props.item.date }}</td>
-          
         </template>
       </v-data-table>
        <v-card-actions>
@@ -26,23 +40,34 @@
 </template>
 
 <script>
-import {bus} from '../main'
 import Axios from 'axios'
-import { logout, isLoggedIn, isActor } from '@/components/authentication'
+import { isActor, isAgent } from '@/components/authentication'
 const CastingComplexAPI = `http://${window.location.hostname}:5050`
 
 export default {
   data () {
     return {
+      isActor: isActor(),
+      isAgent: isAgent(),
       headers: [{
-            text: 'Project',
-            align: 'left',
-            sortable: false,
-            value: 'breakdown'
-          },
-          { text: 'Address', value: 'address' },
-          { text: 'Date', value: 'date' }],
+        text: 'Project',
+        align: 'left',
+        sortable: false,
+        value: 'breakdown'
+      },
+      { text: 'Address', value: 'address' },
+      { text: 'Date', value: 'date' }],
+      headers2: [{
+        text: 'Project',
+        align: 'left',
+        sortable: false,
+        value: 'breakdown'
+      },
+      { text: 'Actor', value: 'actor' },
+      { text: 'Date', value: 'date' }],
+      actorsAuditions: [],
       auditions: [],
+      noAuditions: 'It seems that you have no scheduled auditions!',
       mockAuditions: [
         {
           breakdown: 'Cool project',
@@ -61,7 +86,30 @@ export default {
           address: '1866 random street',
           date: 'Jun 10 2018, 3pm',
           director: 'The director name'
+        }
+      ],
+      mockActorsAuditions: [
+        {
+          breakdown: 'Cool project',
+          actor: 'Rodrigo',
+          address: '1988 stephens street',
+          date: 'Jun 8 2018, 3pm',
+          director: 'The director name'
         },
+        {
+          breakdown: 'Another project',
+          actor: 'Seran',
+          address: '2033 random address',
+          date: 'Jun 9 2018, 3pm',
+          director: 'The director name'
+        },
+        {
+          breakdown: 'Yet another project',
+          actor: 'Jane',
+          address: '1866 random street',
+          date: 'Jun 10 2018, 3pm',
+          director: 'The director name'
+        }
       ]
     }
   },
@@ -69,20 +117,24 @@ export default {
     this.fetchAuditions()
   },
   methods: {
-    editItem(item) {
-      console.log("I have been clicked on")
-    },
-    fetchAuditions() {
-      var config = { 
+    fetchAuditions () {
+      var config = {
         headers: {
           'x-access-token': localStorage.getItem('session_token'),
           'Content-Type': undefined
-          }
+        }
       }
-      var actorId = JSON.parse(localStorage.getItem('logged_profile')).id
-      Axios.get(`${CastingComplexAPI}/actors/${actorId}/auditions`, config).then((response) => {
-        this.auditions = this.mockAuditions;
-      }).catch( error => { console.log(error); });
+      var userId = JSON.parse(localStorage.getItem('logged_profile')).id
+
+      if (this.isActor) {
+        Axios.get(`${CastingComplexAPI}/actors/${userId}/auditions`, config).then((response) => {
+          this.auditions = response.data
+        }).catch(error => { console.log(error) })
+      } else if (this.isAgent) {
+        Axios.get(`${CastingComplexAPI}/agents/${userId}/auditions`, config).then((response) => {
+          this.actorsAuditions = response.data
+        }).catch(error => { console.log(error) })
+      }
     }
   }
 }
@@ -94,6 +146,4 @@ export default {
   .card-text-mod {
     padding: 0 !important;
   }
-
-  
 </style>

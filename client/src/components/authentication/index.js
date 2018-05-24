@@ -13,11 +13,20 @@ export function isLoggedIn () {
   return false
 }
 
+export function isRegistrationInProgress () {
+  var registrationInProgress = localStorage.getItem('registration_in_progress')
+  if (registrationInProgress === null) {
+    return false
+  }
+  return true
+}
+
 export function login (credentials) {
   return Axios.post(`${CastingComplexAPI}/login`, credentials).then(function (response) {
     console.log(response.data)
     localStorage.setItem('session_token', response.data.session_token)
     localStorage.setItem('logged_profile', JSON.stringify(response.data.profile))
+    localStorage.removeItem('registration_in_progress')
     return true
   })
     .catch(function (error) {
@@ -29,8 +38,7 @@ export function login (credentials) {
 export function logout () {
   localStorage.removeItem('session_token')
   localStorage.removeItem('logged_profile')
-  localStorage.removeItem('did_user_pay')
-  localStorage.removeItem('references_sent')
+  localStorage.removeItem('registration_in_progress')
 }
 
 export function isActor () {

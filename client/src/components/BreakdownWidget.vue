@@ -12,6 +12,7 @@
       content-tag="v-layout"
       row
       wrap
+      :no-data-text="noBreakdowns"
     >
       <v-flex
         slot="item"
@@ -57,7 +58,8 @@
 </template>
 
 <script>
-import {bus} from '../main'
+import Axios from 'axios'
+const CastingComplexAPI = `http://${window.location.hostname}:5050`
 
 export default {
   data () {
@@ -66,6 +68,8 @@ export default {
       pagination: {
         rowsPerPage: 1
       },
+      noBreakdowns: 'No recently published breakdowns',
+      breakdowns: [],
       breakdownsMock: [
         {
           name: 'Star Wars IX',
@@ -73,7 +77,7 @@ export default {
           requiresUnion: 'yes',
           rates: '$500/hour',
           citiesForTransmission: 'All planet',
-          synopsis: 'The next installment in the franchise. ',
+          synopsis: 'The next installment in the franchise. '
         },
         {
           name: 'X-Men: Dark Phoenix',
@@ -81,14 +85,23 @@ export default {
           requiresUnion: 'no',
           rates: 'TBD',
           citiesForTransmission: 'All planet',
-          synopsis: 'The next installment in the franchise. ',
+          synopsis: 'The next installment in the franchise. '
         }
       ]
-      
     }
   },
+  created () {
+    this.fetchBreakdowns()
+  },
   methods: {
-    // TODO: load breakdowns
+    fetchBreakdowns () {
+      Axios.get(`${CastingComplexAPI}/breakdowns`)
+        .then((data) => {
+          this.breakdowns = data.data.data
+        }).catch(e => {
+          console.log(e)
+        })
+    }
   }
 }
 </script>
@@ -98,5 +111,4 @@ export default {
   .list__tile__content {
     text-align: right !important;
   }
-  
 </style>

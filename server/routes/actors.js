@@ -184,4 +184,27 @@ router.get('/:actor_id/auditions', VerifyToken, async function(req, res) {
   }
 });
 
+router.get('/:actor_id/auditions/requests', VerifyToken, async function(req, res) {
+
+  if (req.params.actor_id != req.userId) {
+    return ReE(res, {error: "Bad request"}, 404) 
+  }
+  
+  var actor = await models.Actor.findById(req.userId);
+  if (actor == null) return ReE(res, {error: "Actor not found"}, 404)
+
+  try {
+    var requests = await models.AuditionRequest.findAll(
+      {
+        where: {ActorId: actor.id}
+      }
+    );
+    var requestsJson = requests.map(r => r.toJSON());
+    
+    return ReS(res, requestsJson, 200)
+  } catch (e) {
+    return ReE(res, {error: e}, 500)
+  }
+});
+
 module.exports = router;

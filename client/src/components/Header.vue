@@ -14,7 +14,7 @@
     <v-toolbar-title class="centered toolbar__title-mod"> Casting Complex </v-toolbar-title>
     <v-spacer></v-spacer>
     <v-toolbar-items class="main-toolbar" slot="extension">
-      <v-menu v-if="isLoggedIn()" :nudge-width="100">
+      <v-menu v-if="isLoggedIn() && !isRegistrationInProgress()" :nudge-width="100">
         <v-btn slot="activator" flat>
           <v-icon class="hidden-sm-and-down" to='/' left dark>    more_vert</v-icon>
         Home
@@ -25,7 +25,7 @@
           </v-list-tile>
         </v-list>
       </v-menu>
-      <v-btn v-if="!isLoggedIn()" to='/' flat>
+      <v-btn v-if="!isLoggedIn() || isRegistrationInProgress()" to='/' flat>
         <v-icon class="hidden-sm-and-down" to='/' left dark>home</v-icon>
       Home
       </v-btn>
@@ -37,11 +37,11 @@
         <v-icon class="hidden-sm-and-down" left dark>{{ item.icon }}</v-icon>
         {{ item.title }}
       </v-btn>
-      <v-btn v-if="!isLoggedIn()" v-on:click.native="openDialog()" flat>
+      <v-btn v-if="!isLoggedIn() || isRegistrationInProgress()" v-on:click.native="openDialog()" flat>
         <v-icon class="hidden-sm-and-down" left dark>lock_open</v-icon>
         Sign in
       </v-btn>
-      <v-btn v-if="isLoggedIn()" v-on:click.native="logout()" flat>
+      <v-btn v-if="isLoggedIn() && !isRegistrationInProgress()" v-on:click.native="logout()" flat>
         <v-icon class="hidden-sm-and-down" left dark>exit_to_app</v-icon>
         Sign out
       </v-btn>
@@ -51,7 +51,7 @@
 
 <script>
 import {bus} from '../main'
-import { logout, isLoggedIn, isActor } from '@/components/authentication'
+import { logout, isLoggedIn, isActor, isAgent, isRegistrationInProgress } from '@/components/authentication'
 
 export default {
   data () {
@@ -61,6 +61,7 @@ export default {
       },
       menuItems: [],
       isLoggedIn: isLoggedIn,
+      isRegistrationInProgress: isRegistrationInProgress,
       loggedInMenuItems: [
         { title: 'Home', path: '/', icon: 'home' },
         { title: 'About us', path: '/about', icon: 'info' },
@@ -76,6 +77,7 @@ export default {
     }
   },
   mounted () {
+    // TODO: don't load logged navbar if registration is in progress
     this.getCorrectToolbar()
   },
   created: function () {
@@ -83,10 +85,10 @@ export default {
     var vm = this
     bus.$on('logged', function (value) {
       if (value) {
-        vm.getCorrectToolbar()
-        vm.$router.push('/actor-dashboard')
         vm.loginMessage = 'Hi, ' + JSON.parse(localStorage.getItem('logged_profile')).firstName + ', welcome back! :-)'
         vm.snackbar = true
+        vm.getCorrectToolbar()
+        vm.$router.push('/actor-dashboard')
       }
     })
   },
@@ -97,7 +99,7 @@ export default {
     },
     getCorrectToolbar () {
       // Whenever this is called, it changes the menuItems prop, causing the re-rendering of the toolbar
-      if (!isLoggedIn()) {
+      if (!isLoggedIn() || isRegistrationInProgress()) {
         this.menuItems = [
           { title: 'About us', path: '/about', icon: 'info' },
           { title: 'Pricing', path: '/pricing', icon: 'attach_money' },
@@ -105,10 +107,19 @@ export default {
           { title: 'Join', path: '/join', icon: 'face' }
         ]
       }
-      if (isLoggedIn() && isActor()) {
+      if (isLoggedIn() && isActor() && !isRegistrationInProgress()) {
         this.menuItems = [
           { title: 'Dashboard', path: '/actor-dashboard', icon: 'dashboard' },
           { title: 'Profile', path: '/actor-profile', icon: 'person' },
+          { title: 'Messages', path: '/message', icon: 'message' },
+          { title: 'Job board', path: '/job-board', icon: 'work' }
+        ]
+      }
+      if (isLoggedIn() && isAgent() && !isRegistrationInProgress()) {
+        this.menuItems = [
+          { title: 'Dashboard', path: '/agent-dashboard', icon: 'dashboard' },
+          { title: 'Profile', path: '/agent-profile', icon: 'person' },
+          { title: 'Actors', path: '/manage-actors', icon: 'person' },
           { title: 'Messages', path: '/message', icon: 'message' },
           { title: 'Job board', path: '/job-board', icon: 'work' }
         ]
