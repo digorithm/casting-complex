@@ -129,3 +129,12 @@ export default {
   }
 }
 </script>
+
+<style lang="scss" scoped>
+
+  .btn__content {
+    font-weight: 700 !important;
+    color: black !important;
+  }
+
+</style>

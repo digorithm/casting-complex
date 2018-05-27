@@ -10,6 +10,7 @@ import Payment from '@/components/pages/Payment'
 import References from '@/components/pages/References'
 import ActorDashboard from '@/components/pages/ActorDashboard'
 import AgentDashboard from '@/components/pages/AgentDashboard'
+import DirectorDashboard from '@/components/pages/DirectorDashboard'
 import ActorProfile from '@/components/pages/ActorProfile'
 
 // Global components
@@ -22,6 +23,7 @@ import AuditionWidget from '@/components/AuditionWidget'
 import AuditionRequestWidget from '@/components/AuditionRequestWidget'
 import BreakdownWidget from '@/components/BreakdownWidget'
 import NewsWidget from '@/components/NewsWidget'
+import ActorsWidget from '@/components/ActorsWidget'
 
 // Register components
 Vue.component('app-header', Header)
@@ -33,6 +35,7 @@ Vue.component('audition-widget', AuditionWidget)
 Vue.component('audition-request-widget', AuditionRequestWidget)
 Vue.component('breakdown-widget', BreakdownWidget)
 Vue.component('news-widget', NewsWidget)
+Vue.component('actors-widget', ActorsWidget)
 
 Vue.use(Router)
 
@@ -97,6 +100,15 @@ export default new Router({
       name: 'References',
       components: {
         default: References,
+        header: Header,
+        footer: Footer
+      }
+    },
+    {
+      path: '/director-dashboard',
+      name: 'Director Dashboard',
+      components: {
+        default: DirectorDashboard,
         header: Header,
         footer: Footer
       }

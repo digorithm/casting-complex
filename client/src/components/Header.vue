@@ -11,11 +11,11 @@
       {{ loginMessage }}
       <v-btn dark flat @click.native="snackbar = false">Close</v-btn>
     </v-snackbar>
-    <v-toolbar-title class="centered toolbar__title-mod"> Casting Complex </v-toolbar-title>
+    <v-toolbar-title class="toolbar__title-mod"> Casting Complex </v-toolbar-title>
     <v-spacer></v-spacer>
-    <v-toolbar-items class="main-toolbar" slot="extension">
-      <v-menu v-if="isLoggedIn() && !isRegistrationInProgress()" :nudge-width="100">
-        <v-btn slot="activator" flat>
+    <v-toolbar-items class="main-toolbar" slot="">
+      <v-menu offset-y v-if="isLoggedIn() && !isRegistrationInProgress()" :nudge-width="100">
+        <v-btn color="white" slot="activator" flat>
           <v-icon class="hidden-sm-and-down" to='/' left dark>    more_vert</v-icon>
         Home
         </v-btn>
@@ -25,7 +25,7 @@
           </v-list-tile>
         </v-list>
       </v-menu>
-      <v-btn v-if="!isLoggedIn() || isRegistrationInProgress()" to='/' flat>
+      <v-btn color="white" v-if="!isLoggedIn() || isRegistrationInProgress()" to='/' flat>
         <v-icon class="hidden-sm-and-down" to='/' left dark>home</v-icon>
       Home
       </v-btn>
@@ -33,25 +33,37 @@
         flat
         v-for="item in menuItems"
         :key="item.title"
+        color="white"
         :to="item.path">
         <v-icon class="hidden-sm-and-down" left dark>{{ item.icon }}</v-icon>
         {{ item.title }}
       </v-btn>
-      <v-btn v-if="!isLoggedIn() || isRegistrationInProgress()" v-on:click.native="openDialog()" flat>
+      <v-btn color="white" v-if="!isLoggedIn() || isRegistrationInProgress()" v-on:click.native="openDialog()" flat>
         <v-icon class="hidden-sm-and-down" left dark>lock_open</v-icon>
         Sign in
       </v-btn>
-      <v-btn v-if="isLoggedIn() && !isRegistrationInProgress()" v-on:click.native="logout()" flat>
-        <v-icon class="hidden-sm-and-down" left dark>exit_to_app</v-icon>
-        Sign out
-      </v-btn>
+      <v-menu class="hidden-sm-and-down" offset-y v-if="isLoggedIn() && !isRegistrationInProgress()" :nudge-width="100">
+        <v-btn color="white" slot="activator" v-if="isLoggedIn() && !isRegistrationInProgress()" flat>
+          <v-avatar
+          size="50px"
+          >
+            <img :src=profilePic />
+          </v-avatar>
+        </v-btn>
+        <v-list>
+          <v-list-tile v-for="item in avatarMenuItems" :key="item.title" v-on:click.native="logout()" :to=item.path>
+            <v-list-tile-title v-text="item.title">
+            </v-list-tile-title>
+          </v-list-tile>
+        </v-list>
+      </v-menu>
     </v-toolbar-items>
   </v-toolbar>
 </template>
 
 <script>
 import {bus} from '../main'
-import { logout, isLoggedIn, isActor, isAgent, isRegistrationInProgress } from '@/components/authentication'
+import { logout, isLoggedIn, isActor, isAgent, isDirector, isRegistrationInProgress } from '@/components/authentication'
 
 export default {
   data () {
@@ -68,12 +80,16 @@ export default {
         { title: 'Pricing', path: '/pricing', icon: 'attach_money' },
         { title: 'Contact', path: '/contact', icon: 'contacts' }
       ],
+      avatarMenuItems: [
+        { title: 'Sign off', path: '/', icon: 'exit_to_app' }
+      ],
       color: 'success',
       mode: '',
       y: 'top',
       snackbar: false,
       timeout: 5000,
-      loginMessage: 'Hello, I\'m a snackbar'
+      loginMessage: 'Hello, I\'m a snackbar',
+      profilePic: ''
     }
   },
   mounted () {
@@ -81,6 +97,13 @@ export default {
     this.getCorrectToolbar()
   },
   created: function () {
+    if (isActor()) {
+      this.profilePic = '/static/img/actor3.jpg'
+    } else if (isAgent()) {
+      this.profilePic = '/static/img/woman2.jpg'
+    } else if (isDirector()) {
+      this.profilePic = '/static/img/man1.jpg'
+    }
     // Whenever we get a signal from the bus telling us that the user has logged in, we update the toolbar
     var vm = this
     bus.$on('logged', function (value) {
@@ -88,7 +111,9 @@ export default {
         vm.loginMessage = 'Hi, ' + JSON.parse(localStorage.getItem('logged_profile')).firstName + ', welcome back! :-)'
         vm.snackbar = true
         vm.getCorrectToolbar()
-        vm.$router.push('/actor-dashboard')
+        if (isActor()) { vm.$router.push('/actor-dashboard') }
+        if (isAgent()) { vm.$router.push('/agent-dashboard') }
+        if (isDirector()) { vm.$router.push('/director-dashboard') }
       }
     })
   },
@@ -124,6 +149,15 @@ export default {
           { title: 'Job board', path: '/job-board', icon: 'work' }
         ]
       }
+      if (isLoggedIn() && isDirector() && !isRegistrationInProgress()) {
+        this.menuItems = [
+          { title: 'Dashboard', path: '/director-dashboard', icon: 'dashboard' },
+          { title: 'Profile', path: '/director-profile', icon: 'person' },
+          { title: 'Breakdowns', path: '/breakdowns', icon: 'work' },
+          { title: 'Messages', path: '/message', icon: 'message' },
+          { title: 'Job board', path: '/job-board', icon: 'work' }
+        ]
+      }
     },
     logout () {
       logout()
@@ -145,10 +179,8 @@ export default {
     color: black;
   }
 
-  .main-toolbar {
-    width: 100% !important;
-    display: flex;
-    justify-content: space-around;
+.main-toolbar {
+    
   }
 
   .btn.btn-nav {
@@ -159,9 +191,10 @@ export default {
     padding-top: 5px;
   }
 
-  .btn__content {
-    font-weight: 700 !important;
-  }
+  // .btn__content {
+  //   font-weight: 700 !important;
+  //   color: white !important;
+  // }
 
   .toolbar__extension {
     background-color: white !important;
@@ -170,10 +203,7 @@ export default {
     height: $navbar-height !important;
   }
   .toolbar__title-mod {
-    font-size: 68px !important;
-    display: flex;
-    justify-content: space-around;
-    width: 100% !important;
+    font-size: 45px !important;
     color: white;
     font-family: $logo;
   }

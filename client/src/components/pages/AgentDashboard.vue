@@ -22,7 +22,7 @@
             <v-flex d-flex xs12 sm6 md4>
               <v-layout row wrap>
                 <v-flex d-flex mb-3>
-                  <audition-request-widget></audition-request-widget>
+                  <actors-widget></actors-widget>
                 </v-flex>
                 <v-flex d-flex>
                   <news-widget></news-widget>

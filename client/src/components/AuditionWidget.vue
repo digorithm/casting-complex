@@ -7,15 +7,14 @@
     <v-card-text class="card-text-mod">
       <v-data-table
         :headers="headers2"
-        :items="actorsAuditions"
+        :items="mockActorsAuditions"
         hide-actions
         :no-data-text="noAuditions"
-        v-if="isAgent"
+        v-if="isAgent || isDirector"
       >
         <template slot="items" slot-scope="props">
           <td>{{ props.item.breakdown }}</td>
           <td>{{ props.item.actor }}</td>
-          <td class="text-xs-left">{{ props.item.address }}</td>
           <td class="text-xs-left">{{ props.item.date }}</td>
         </template>
       </v-data-table>
@@ -32,21 +31,24 @@
           <td class="text-xs-left">{{ props.item.date }}</td>
         </template>
       </v-data-table>
+      <v-layout justify-center>
        <v-card-actions>
-      <v-btn color="primary" block small>View all auditions</v-btn>
-    </v-card-actions>
+        <v-btn color="primary" small>View all auditions</v-btn>
+      </v-card-actions>
+      </v-layout>
     </v-card-text>
   </v-card>
 </template>
 
 <script>
 import Axios from 'axios'
-import { isActor, isAgent } from '@/components/authentication'
+import { isActor, isAgent, isDirector } from '@/components/authentication'
 const CastingComplexAPI = `http://${window.location.hostname}:5050`
 
 export default {
   data () {
     return {
+      isDirector: isDirector(),
       isActor: isActor(),
       isAgent: isAgent(),
       headers: [{

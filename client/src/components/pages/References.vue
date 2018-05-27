@@ -219,7 +219,7 @@
 
 <script>
 import Axios from 'axios'
-import { isLoggedIn } from '@/components/authentication'
+import { isLoggedIn, isAgent, isDirector } from '@/components/authentication'
 
 const CastingComplexAPI = `http://${window.location.hostname}:5050`
 
@@ -349,8 +349,12 @@ export default {
         }
 
         localStorage.removeItem('registration_in_progress')
-        // TODO: This redirect should be to user's dashboard
-        this.$router.push('/')
+
+        if (isAgent()) {
+          this.$router.push('/agent-dashboard')
+        } else {
+          this.$router.push('/director-dashboard')
+        }
       }
     },
     sendReferences (references) {

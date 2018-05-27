@@ -51,9 +51,11 @@
       </v-flex>
     </v-data-iterator>
     </v-card-text>
-    <v-card-actions>
-      <v-btn color="primary" block small>View all breakdowns</v-btn>
-    </v-card-actions>
+    <v-layout justify-center>
+      <v-card-actions>
+        <v-btn color="primary" block small>View all breakdowns</v-btn>
+      </v-card-actions>
+    </v-layout>
   </v-card>
 </template>
 

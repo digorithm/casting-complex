@@ -244,6 +244,7 @@ router.get('/:agent_id/auditions', VerifyToken, async function(req, res) {
     }
     return ReS(res, allAuditions, 200)
   } catch (e) {
+    console.log(e)
     return ReE(res, {error: e}, 500)
   }
 });

@@ -1,6 +1,6 @@
 <template>
   <v-card>
-    <v-card-media src="/static/img/actor3.jpg" height="300px">
+    <v-card-media :src=profilePic height="300px">
     </v-card-media>
     <v-card-title primary class="title">
       <v-layout row warp align-center>
@@ -22,18 +22,24 @@
         <p><strong>Agency divisions:</strong> <em>{{ divisions }}</em></p>
         <p><strong>Roster types:</strong> <em>{{ rosterTypes }}</em></p>
       </template>
+      <template v-else-if="isDirector">
+        <p><strong>Casting specialization:</strong> <em>{{ specializations }}</em></p>
+      </template>
       <p><strong>Biography:</strong> <em>{{ biography }}</em></p>
     </v-card-text>
     <v-card-actions>
-      <v-btn v-if="isActor" color="primary" to="/actor-profile" block small>View public profile</v-btn>
-      <v-btn v-if="isAgent" color="primary" to="/agent-profile" block small>View public profile</v-btn>
+      <v-layout justify-center>
+        <v-btn v-if="isActor" color="primary" to="/actor-profile" small>View public profile</v-btn>
+        <v-btn v-if="isAgent" color="primary" to="/agent-profile" small>View public profile</v-btn>
+        <v-btn v-if="isDirector" color="primary" to="/director-profile" small>View public profile</v-btn>
+      </v-layout>
     </v-card-actions>
   </v-card>
 </template>
 
 <script>
 import Axios from 'axios'
-import { isLoggedIn, isActor, isAgent } from '@/components/authentication'
+import { isActor, isAgent, isDirector } from '@/components/authentication'
 const CastingComplexAPI = `http://${window.location.hostname}:5050`
 
 export default {
@@ -54,14 +60,14 @@ export default {
       website: '',
       divisions: [],
       rosterTypes: [],
+      specializations: 'Music video, Film',
       isAgent: isAgent(),
-      isActor: isActor()
+      isActor: isActor(),
+      isDirector: isDirector(),
+      profilePic: ''
     }
   },
   beforeCreate () {
-    if (!isLoggedIn()) {
-      this.$router.push('/')
-    }
   },
   created () {
     this.profile = JSON.parse(localStorage.getItem('logged_profile'))
@@ -76,10 +82,14 @@ export default {
       }
     })()
     if (isActor()) {
+      this.profilePic = '/static/img/actor3.jpg'
       this.getCityAndCountry()
     } else if (isAgent()) {
+      this.profilePic = '/static/img/woman2.jpg'
       this.agencyName = this.profile.agencyName
       this.position = this.profile.position
+    } else if (isDirector()) {
+      this.profilePic = '/static/img/man1.jpg'
     }
   },
   methods: {
@@ -91,7 +101,8 @@ export default {
             this.getCreditsandUnions()
           } else if (isAgent()) {
             this.getDivisionAndType()
-            console.log(this.divisions, this.rosterTypes)
+          } else if (isDirector()) {
+            // this.getCastingSpecialization()
           }
         }).catch((err) => {
           console.log(err)
@@ -106,6 +117,9 @@ export default {
       this.divisions = this.extras['AgencyDivision'].filter(a => this.profile.agencyDivisionId.includes(a.id)).map(a => a.name).join(', ')
 
       this.rosterTypes = this.extras['RosterType'].filter(r => this.profile.rosterTypeId.includes(r.id)).map(r => r.name).join(', ')
+    },
+    getCastingSpecialization () {
+      this.specializations = this.extras['CastingSpecialization'].filter(s => this.profile.specializationId.includes(s.id)).map(s => s.name).join(', ')
     },
     getCityAndCountry (context) {
       Axios.get(`${CastingComplexAPI}/extras/countries`)

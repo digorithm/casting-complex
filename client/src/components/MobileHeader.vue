@@ -40,7 +40,7 @@
 
 <script>
 import {bus} from '../main'
-import { logout, isLoggedIn, isRegistrationInProgress, isActor, isAgent } from '@/components/authentication'
+import { logout, isLoggedIn, isRegistrationInProgress, isActor, isAgent, isDirector } from '@/components/authentication'
 
 export default {
   data () {
@@ -71,7 +71,9 @@ export default {
     bus.$on('logged', function (value) {
       if (value) {
         vm.getCorrectToolbar()
-        vm.$router.push('/actor-dashboard')
+        if (isActor()) { vm.$router.push('/actor-dashboard') }
+        if (isAgent()) { vm.$router.push('/agent-dashboard') }
+        if (isDirector()) { vm.$router.push('/director-dashboard') }
         vm.loginMessage = 'Hi, ' + JSON.parse(localStorage.getItem('logged_profile')).firstName + ', welcome back! :-)'
         vm.snackbar = true
       }
@@ -105,6 +107,15 @@ export default {
           { title: 'Dashboard', path: '/agent-dashboard', icon: 'dashboard' },
           { title: 'Profile', path: '/agent-profile', icon: 'person' },
           { title: 'Actors', path: '/manage-actors', icon: 'person' },
+          { title: 'Messages', path: '/message', icon: 'message' },
+          { title: 'Job board', path: '/job-board', icon: 'work' }
+        ]
+      }
+      if (isLoggedIn() && isDirector() && !isRegistrationInProgress()) {
+        this.menuItems = [
+          { title: 'Dashboard', path: '/director-dashboard', icon: 'dashboard' },
+          { title: 'Profile', path: '/director-profile', icon: 'person' },
+          { title: 'Breakdowns', path: '/breakdowns', icon: 'work' },
           { title: 'Messages', path: '/message', icon: 'message' },
           { title: 'Job board', path: '/job-board', icon: 'work' }
         ]
