@@ -172,4 +172,44 @@ router.get('/:casting_director_id/credits', async function(req, res) {
   
 })
 
+router.get('/:casting_director_id/auditions', VerifyToken, async function(req, res) {
+  console.log("Am I even here?")
+  if (req.params.casting_director_id != req.userId) {
+    return ReE(res, {error: "Bad request"}, 404) 
+  }
+  
+  var director = await models.CastingDirector.findById(req.userId);
+  if (director == null) return ReE(res, {error: "Director not found"}, 404)
+  
+  var allAuditions = []
+
+  try {
+    var breakdowns = await models.Breakdown.findAll({
+      where: {CastingDirectorId: director.id}
+    });
+    
+    // For each breakdown, get its auditions
+    for (breakdown of breakdowns) {
+      var auditions = await models.Audition.findAll(
+        {
+          where: {breakdownId: breakdown.id}
+        }
+      );
+      // Get audition's actor name and transform to JSON
+      var auditionsJson = auditions.map(async function (a) { 
+        var j = a.toJSON();
+        var actor = await models.Actor.findById(a.ActorId)
+        j.actor = actor.firstName
+        return j
+      });
+
+      allAuditions.push(auditionsJson)
+    }
+    return ReS(res, allAuditions, 200)
+  } catch (e) {
+    console.log(e)
+    return ReE(res, {error: e}, 500)
+  }
+});
+
 module.exports = router;

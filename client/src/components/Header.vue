@@ -180,7 +180,6 @@ export default {
   }
 
 .main-toolbar {
-    
   }
 
   .btn.btn-nav {

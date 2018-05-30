@@ -7,7 +7,7 @@
     <v-card-text class="card-text-mod">
       <v-data-table
         :headers="headers2"
-        :items="mockActorsAuditions"
+        :items="actorsAuditions"
         hide-actions
         :no-data-text="noAuditions"
         v-if="isAgent || isDirector"
@@ -134,6 +134,10 @@ export default {
         }).catch(error => { console.log(error) })
       } else if (this.isAgent) {
         Axios.get(`${CastingComplexAPI}/agents/${userId}/auditions`, config).then((response) => {
+          this.actorsAuditions = response.data
+        }).catch(error => { console.log(error) })
+      } else if (this.isDirector) {
+        Axios.get(`${CastingComplexAPI}/castingdirectors/${userId}/auditions`, config).then((response) => {
           this.actorsAuditions = response.data
         }).catch(error => { console.log(error) })
       }

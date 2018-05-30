@@ -11,7 +11,7 @@ import References from '@/components/pages/References'
 import ActorDashboard from '@/components/pages/ActorDashboard'
 import AgentDashboard from '@/components/pages/AgentDashboard'
 import DirectorDashboard from '@/components/pages/DirectorDashboard'
-import ActorProfile from '@/components/pages/ActorProfile'
+import Profile from '@/components/pages/Profile'
 
 // Global components
 import Header from '@/components/Header'
@@ -132,10 +132,10 @@ export default new Router({
       }
     },
     {
-      path: '/actor-profile',
-      name: 'Actor Profile',
+      path: '/profile/:username',
+      name: 'Profile',
       components: {
-        default: ActorProfile,
+        default: Profile,
         header: Header,
         footer: Footer
       }

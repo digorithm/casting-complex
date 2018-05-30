@@ -6,7 +6,7 @@
     <v-divider></v-divider>
     <v-card-text>
        <v-data-iterator
-      :items="breakdownsMock"
+      :items="breakdowns"
       :rows-per-page-items="[1]"
       :pagination.sync="pagination"
       content-tag="v-layout"

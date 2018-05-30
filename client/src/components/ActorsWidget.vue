@@ -71,7 +71,7 @@ export default {
         rowsPerPage: 1
       },
       noActors: 'No recently joined actors ',
-      actors: [],
+      recentActors: [],
       actorsMock: [
         {
           firstName: 'Rodrigo',
@@ -101,6 +101,14 @@ export default {
   created () {
   },
   methods: {
+    getRecentActors () {
+      Axios.get(`${CastingComplexAPI}/actors`)
+        .then((data) => {
+          this.recentActors = data.data.data
+        }).catch(e => {
+          console.log(e)
+        })
+    },
     getProfileCardStyle () {
       var breakpoint = this.$vuetify.breakpoint.name
       if (breakpoint === 'xl') {

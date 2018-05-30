@@ -352,7 +352,7 @@ export default {
 
         if (isAgent()) {
           this.$router.push('/agent-dashboard')
-        } else {
+        } else if (isDirector()) {
           this.$router.push('/director-dashboard')
         }
       }
