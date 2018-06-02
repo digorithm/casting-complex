@@ -56,7 +56,7 @@ export default {
 }
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
   @import "./../../assets/styles";
 
   .content {
@@ -74,7 +74,10 @@ export default {
   .card__text {
     color: black !important;
     text-align: left !important;
+    padding: 16px !important;
+    width: 100% !important;
   }
+
   .profile-btn {
     width: 100px !important;
     height: 100px !important;
@@ -82,4 +85,5 @@ export default {
   .featured-actors {
     padding-bottom: 20px !important;
   }
+
 </style>

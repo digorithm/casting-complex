@@ -135,7 +135,7 @@ export default {
       if (isLoggedIn() && isActor() && !isRegistrationInProgress()) {
         this.menuItems = [
           { title: 'Dashboard', path: '/actor-dashboard', icon: 'dashboard' },
-          { title: 'Profile', path: '/actor-profile', icon: 'person' },
+          { title: 'Profile', path: '/actor/digorithm', icon: 'person' },
           { title: 'Messages', path: '/message', icon: 'message' },
           { title: 'Job board', path: '/job-board', icon: 'work' }
         ]

@@ -132,8 +132,8 @@ export default new Router({
       }
     },
     {
-      path: '/profile/:username',
-      name: 'Profile',
+      path: '/actor/:username',
+      name: 'Actor profile',
       components: {
         default: Profile,
         header: Header,
