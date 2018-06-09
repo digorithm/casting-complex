@@ -12,6 +12,7 @@ import ActorDashboard from '@/components/pages/ActorDashboard'
 import AgentDashboard from '@/components/pages/AgentDashboard'
 import DirectorDashboard from '@/components/pages/DirectorDashboard'
 import Profile from '@/components/pages/Profile'
+import EditActorProfile from '@/components/pages/EditActorProfile'
 
 // Global components
 import Header from '@/components/Header'
@@ -136,6 +137,15 @@ export default new Router({
       name: 'Actor profile',
       components: {
         default: Profile,
+        header: Header,
+        footer: Footer
+      }
+    },
+    {
+      path: '/edit/actor',
+      name: 'Edit actor profile',
+      components: {
+        default: EditActorProfile,
         header: Header,
         footer: Footer
       }

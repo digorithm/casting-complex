@@ -13,7 +13,7 @@
                   src="/static/img/bg3.jpg"
                 >
                 <v-layout align-end row wrap>
-                  <v-flex xs4 md2 lg2 xl2 sm3 mb-3 mt-1 style="z-index: 100 !important;"
+                  <v-flex xs3 md2 lg2 xl2 sm3 mb-3 mt-1 style="z-index: 100 !important;"
                   :class="{'mr-3': $vuetify.breakpoint.smAndDown,
                            'mr-5': $vuetify.breakpoint.mdOnly,
                            'mr-3': $vuetify.breakpoint.xlOnly,
@@ -22,20 +22,21 @@
                            'ml-3': $vuetify.breakpoint.smAndUp}">
                         <v-avatar
                         :size=getProfilePicStyle()
-                        tile="true"
+                        :tile=true
                         >
                           <img :src=profilePic />
                         </v-avatar>
                   </v-flex>
-                  <v-flex xs6 md3 lg4 xl3 sm3
+                  <v-flex xs7 md3 lg4 xl3 sm4
                   :class="{'mb-0': $vuetify.breakpoint.smAndDown,
                             'mb-5' : $vuetify.breakpoint.mdAndUp,
                             'ml-3': $vuetify.breakpoint.lgAndDown,
                             'ml-5': $vuetify.breakpoint.xlAndUp,
+                            'pl-4': $vuetify.breakpoint.smOnly,
                             'ml-5': $vuetify.breakpoint.xsOnly,
                             'mr-5': $vuetify.breakpoint.xlOnly}">
-                       <h2 class="white--text fullname">{{ fullName }}</h2>
-                       <p class="from white--text">{{ role }} | <v-icon style="color: white !important;" dark small>location_on</v-icon> {{ from }}</p>
+                       <h2 class="white--text fullname">{{ profile.fullname }}</h2>
+                       <p :class="{'mb-5': $vuetify.breakpoint.smOnly}" class="from white--text">{{ profile.role }} | <v-icon style="color: white !important;" dark small>location_on</v-icon> {{ profile.from }}</p>
                   </v-flex>
                   <v-flex xs12 sm4 md5 lg5 xl6 class="text-md-right text-xs-center" style="margin-bottom: 35px !important;">
                       <p>
@@ -60,16 +61,16 @@
                       <v-btn class="card-btn-right" @click.native="showAlbum" flat>Photos</v-btn>
                     </v-toolbar-items>
                   </v-toolbar>
-                      <v-template v-if="toggleInfo">
+                      <template v-if="toggleInfo">
                       <v-layout row wrap justify-space-around>
                       <v-flex xs11 md6 pt-3>
                         <h2> Summary </h2>
-                        <p> {{ biographyMock }} </p>
+                        <p> {{ profile.biography }} </p>
                         <v-divider></v-divider>
                         <h2> Experience </h2>
                         <v-data-table
                           :headers="headers"
-                          :items="experience"
+                          :items="profile.experience"
                           hide-actions
                           :no-data-text="noExperience"
                         >
@@ -89,7 +90,7 @@
                           </v-flex>
                           <v-flex xs9 md9>
                             <v-btn outline small round color="primary">
-                              {{ fullName }}
+                              {{ profile.fullname }}
                             </v-btn>
                           </v-flex>
                           <v-flex xs3 md3>
@@ -97,77 +98,101 @@
                           </v-flex>
                           <v-flex xs9 md9>
                             <v-btn outline small round color="primary">
-                              {{ details.age }}
+                              {{ profile.age }}
                             </v-btn>
                           </v-flex>
-                          <v-flex xs3 md3>
-                            Height:
-                          </v-flex>
-                          <v-flex xs9 md9>
-                            <v-btn outline small round color="primary">
-                              {{ details.height }}
-                            </v-btn>
-                          </v-flex>
-                          <v-flex xs3 md3>
-                            Weight:
-                          </v-flex>
-                          <v-flex xs9 md9>
-                            <v-btn outline small round color="primary">
-                              {{ details.weight }}
-                            </v-btn>
-                          </v-flex>
-                          <v-flex xs3 md3>
-                            Eyes:
-                          </v-flex>
-                          <v-flex xs9 md9>
-                            <v-btn outline small round color="primary">
-                              {{ details.eyes }}
-                            </v-btn>
-                          </v-flex>
-                          <v-flex xs3 md3>
-                            Hair:
-                          </v-flex>
-                          <v-flex xs9 md9>
-                            <v-btn outline small round color="primary">
-                              {{ details.hair }}
-                            </v-btn>
-                          </v-flex>
-                          <v-flex xs3 md3>
-                            Ethnicity:
-                          </v-flex>
-                          <v-flex xs9 md9>
-                            <v-btn outline small round color="primary">
-                              {{ details.ethnicity }}
-                            </v-btn>
-                          </v-flex>
+                          <template v-if="this.profile.height">
+                            <v-flex xs3 md3>
+                              Height:
+                            </v-flex>
+                            <v-flex xs9 md9>
+                              <v-btn outline small round color="primary">
+                                {{ profile.height }} cms
+                              </v-btn>
+                            </v-flex>
+                          </template>
+                          <template v-if="this.profile.weight">
+                            <v-flex xs3 md3>
+                              Weight:
+                            </v-flex>
+                            <v-flex xs9 md9>
+                              <v-btn outline small round color="primary">
+                                {{ profile.weight }} KGs
+                              </v-btn>
+                            </v-flex>
+                          </template>
+                          <template v-if="this.profile.eyes">
+                            <v-flex xs3 md3>
+                              Eyes:
+                            </v-flex>
+                            <v-flex xs9 md9>
+                              <v-btn outline small round color="primary">
+                                {{ profile.eyes }}
+                              </v-btn>
+                            </v-flex>
+                          </template>
+                          <template v-if="this.profile.hair">
+                            <v-flex xs3 md3>
+                              Hair:
+                            </v-flex>
+                            <v-flex xs9 md9>
+                              <v-btn outline small round color="primary">
+                                {{ profile.hair }}
+                              </v-btn>
+                            </v-flex>
+                          </template>
+                          <template v-if="this.profile.ethnicity">
+                            <v-flex xs3 md3>
+                              Ethnicity:
+                            </v-flex>
+                            <v-flex xs9 md9>
+                              <v-btn outline small round color="primary">
+                                {{ profile.ethnicity }}
+                              </v-btn>
+                            </v-flex>
+                          </template>
                         </v-layout>
                         <v-divider></v-divider>
+                        <h3>Skills</h3>
+                        <v-btn outline small round color="primary" v-for="skill in profile.skills" :key="skill">{{skill}}</v-btn>
+                        <v-divider></v-divider>
                         <h3>Speaks</h3>
-                        <v-btn outline small round color="primary" v-for="language in details.speaks" :key="language">{{language}}</v-btn>
+                        <v-btn outline small round color="primary" v-for="language in profile.languages" :key="language">{{language}}</v-btn>
                         <v-divider></v-divider>
                         <h3>Credits</h3>
-                        <v-btn outline small round color="primary" v-for="credit in details.credits" :key="credit">{{credit}}</v-btn>
+                        <v-btn outline small round color="primary" v-for="credit in profile.credits" :key="credit">{{credit}}</v-btn>
                         <v-divider></v-divider>
                         <h3>Unions</h3>
-                        <v-btn outline small round color="primary" v-for="union in details.unions" :key="union">{{union}}</v-btn>
+                        <v-btn outline small round color="primary" v-for="union in profile.unions" :key="union">{{union}}</v-btn>
                         <v-divider></v-divider>
-                        <!-- <v-template v-if="!isRepped">
-                          <h4>{{fullName}} does not have an agent.</h4>
-                          <v-btn small block color="primary"> Click here to hire this actor </v-btn>
-                        </v-template>
-                        <v-template v-if="isRepped">
+
+                        <template v-if="!isRepped">
+                          <h4>{{profile.fullname}} does not have an agent.</h4>
+
+                          <v-btn v-if="isAgentViewing" small block color="primary"> Click here to hire this actor </v-btn>
+                        </template>
+
+                        <template v-if="isRepped">
                           <h3>Representation</h3>
-                          {{fullName}} is represented by <strong>John Doe</strong> (<a href='/'>@JohnDoe</a>) from <strong>The Casting Agency</strong>.
-                        </v-template> -->
-                        <v-template v-if="isActorViewing">
-                          <v-btn small block color="primary"> Edit your profile </v-btn>
-                        </v-template>
+                          {{profile.fullname}} is represented by <strong>John Doe</strong> (<a href='/'>@JohnDoe</a>) from <strong>The Casting Agency</strong>.
+                        </template>
+
+                        <template v-if="isSelfViewing">
+                          <v-btn small to="/edit/actor" block color="primary"> Edit your profile </v-btn>
+                        </template>
+
+                        <template v-if="isDirectorViewing">
+                          <v-divider></v-divider>
+                          <v-btn small block color="primary"> Invite for an audition</v-btn>
+                        </template>
+
                       </v-flex>
                       </v-layout>
-                      </v-template>
-                      <v-template v-if="!toggleInfo">
+                      </template>
+
+                      <template v-if="!toggleInfo">
                         Here are some photos
-                      </v-template>
+                      </template>
                 </v-card-text>
                 <v-divider></v-divider>
               </v-card>
@@ -188,8 +213,11 @@ const CastingComplexAPI = `http://${window.location.hostname}:5050`
 export default {
   data () {
     return {
-      isActorViewing: true,
-      isRepped: true,
+      isSelfViewing: true,
+      isActorViewing: false,
+      isAgentViewing: false,
+      isDirectorViewing: false,
+      isRepped: false,
       headers: [{
         text: 'Project',
         align: 'left',
@@ -198,64 +226,30 @@ export default {
       { text: 'Role', value: 'role' },
       { text: 'Type', value: 'type' },
       { text: 'Year', value: 'year' }],
-      experience: [
-        {
-          project: 'Cool project',
-          role: 'young woman 1',
-          type: 'Commercial film',
-          year: '2018'
-        },
-        {
-          project: 'Cool project',
-          role: 'young woman 1',
-          type: 'Commercial film',
-          year: '2018'
-        },
-        {
-          project: 'Cool project',
-          role: 'young woman 1',
-          type: 'Commercial film',
-          year: '2018'
-        }
-      ],
-      noAuditions: 'No added experiences',
+      noExperience: 'No added experiences',
       toggleInfo: true,
       active: '1',
-      card: {
-        title: 'Rodrigo Araujo'
-      },
-      profile: '',
-      fullName: '',
-      from: 'Vancouver, Canada',
-      role: 'Actress',
-      biography: '',
-      biographyMock: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla condimentum lacus ut risus suscipit consequat ac sed nisl. Ut volutpat urna non est bibendum pretium. Maecenas luctus cursus tellus ut porttitor. Phasellus commodo neque nulla Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla condimentum lacus ut risus suscipit consequat ac sed nisl. Ut volutpat urna non est bibendum pretium. Maecenas luctus cursus tellus ut porttitor. Phasellus commodo neque nulla, Phasellus commodo neque nulla Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla condimentum lacus ut risus suscipit consequat ac sed nisl. Ut volutpat urna non est bibendum pretium. Maecenas luctus cursus tellus ut porttitor. Phasellus commodo neque nulla Maecenas luctus cursus tellus ut porttitor. Phasellus commodo neque nulla',
-      country: '',
-      city: '',
-      ethnicity: '',
-      extras: [],
-      credits: '',
-      unions: '',
-      agencyName: '',
-      position: '',
-      website: '',
-      divisions: [],
-      rosterTypes: [],
-      specializations: 'Music video, Film',
       isAgent: isAgent(),
       isActor: isActor(),
       isDirector: isDirector(),
       profilePic: '',
-      details: {
-        age: 24,
-        height: '168 cm',
-        weight: '130 lb',
-        eyes: 'Green',
-        hair: 'Blonde',
-        ethnicity: 'Caucasian',
-        speaks: ['English', 'Portuguese', 'Turkish'],
-        credits: ['Actor', 'Voice overs', 'Dancer'],
-        unions: ['CAEA', 'RQD']
+      profile: {
+        fullname: '',
+        role: '',
+        age: '',
+        from: '',
+        height: '',
+        weight: '',
+        eyes: '',
+        hair: '',
+        ethnicity: '',
+        credits: [],
+        unions: [],
+        skills: [],
+        isRepped: '',
+        experience: [],
+        languages: [],
+        biography: ''
       }
     }
   },
@@ -265,8 +259,44 @@ export default {
     }
   },
   mounted () {
+    this.fetchActor(this.$route.params.username)
   },
   methods: {
+    fetchActor (username) {
+      Axios.get(`${CastingComplexAPI}/actors/?username=${username}`)
+        .then((data) => {
+          var profile = data.data.data
+          this.profile.fullname = profile.firstName + ' ' + profile.lastName
+          this.profile.age = this.calculateAge(profile.birthdate) || '?'
+          this.profile.role = (profile.genderId === 1 ? 'Actress' : 'Actor')
+          this.profile.height = profile.height
+          this.profile.weight = profile.weight
+          this.profile.hair = profile.Hair
+          this.profile.eyes = profile.Eye
+          this.profile.ethnicity = profile.Ethnicity
+          this.profile.experience = profile.Experiences
+          this.profile.skills = profile.Skills
+          this.profile.languages = profile.Languages
+          this.profile.credits = profile.Credits
+          this.profile.unions = profile.Unions
+          this.profile.isRepped = profile.isRepresented
+          this.profile.from = profile.City + ', ' + profile.Country
+          this.profile.biography = profile.profile
+
+          console.log(profile.Experiences.type)
+        }).catch((err) => {
+          console.log(err)
+        })
+    },
+    calculateAge (birthdate) {
+      var birthday = new Date(birthdate)
+      var ageDifMs = Date.now() - birthday.getTime()
+      var ageDate = new Date(ageDifMs)
+      if (isNaN(Math.abs(ageDate.getUTCFullYear() - 1970))) {
+        return null
+      }
+      return Math.abs(ageDate.getUTCFullYear() - 1970)
+    },
     getCardMediaHeight () {
       var breakpoint = this.$vuetify.breakpoint.name
       if (breakpoint === 'xs') {
@@ -300,69 +330,13 @@ export default {
     },
     showAlbum () {
       this.toggleInfo = false
-    },
-    getExtras (context) {
-      Axios.get(`${CastingComplexAPI}/extras`)
-        .then((data) => {
-          this.extras = data.data.data
-          if (isActor()) {
-            this.getCreditsandUnions()
-          } else if (isAgent()) {
-            this.getDivisionAndType()
-          } else if (isDirector()) {
-            // this.getCastingSpecialization()
-          }
-        }).catch((err) => {
-          console.log(err)
-        })
-    },
-    getCreditsandUnions () {
-      this.credits = this.extras['Credit'].filter(c => this.profile.creditId.includes(c.id)).map(c => c.name).join(', ')
-
-      this.unions = this.extras['Union'].filter(u => this.profile.unionId.includes(u.id)).map(u => u.name).join(', ')
-    },
-    getDivisionAndType () {
-      this.divisions = this.extras['AgencyDivision'].filter(a => this.profile.agencyDivisionId.includes(a.id)).map(a => a.name).join(', ')
-
-      this.rosterTypes = this.extras['RosterType'].filter(r => this.profile.rosterTypeId.includes(r.id)).map(r => r.name).join(', ')
-    },
-    getCastingSpecialization () {
-      this.specializations = this.extras['CastingSpecialization'].filter(s => this.profile.specializationId.includes(s.id)).map(s => s.name).join(', ')
-    },
-    getCityAndCountry (context) {
-      Axios.get(`${CastingComplexAPI}/extras/countries`)
-        .then((data) => {
-          this.country = data.data.data.filter(c => this.profile.countryId === c.id)[0]
-          Axios.get(`${CastingComplexAPI}/extras/cities/${this.country.id}`)
-            .then((data) => {
-              this.city = data.data.data.filter(c => this.profile.cityId === c.id)[0]
-            }).catch((err) => {
-              console.log(err)
-            })
-        }).catch((err) => {
-          console.log(err)
-        })
     }
   },
   created () {
-    this.profile = JSON.parse(localStorage.getItem('logged_profile'))
-    this.fullName = this.profile.firstName + ' ' + this.profile.lastName
-    this.getExtras()
-    this.biography = (function () {
-      var profile = JSON.parse(localStorage.getItem('logged_profile')).profile
-      if (profile === null) {
-        return 'Welcome to Casting Complex! This page is your main dashboard, wbere you can access information such as recently published breakdowns, your auditions, statuses for your audition requests, news, and more! You can edit your profile by clicking on the edit, the pencil icon, right about your profile!'
-      } else {
-        return profile.profile
-      }
-    })()
     if (isActor()) {
       this.profilePic = '/static/img/actor3.jpg'
-      this.getCityAndCountry()
     } else if (isAgent()) {
       this.profilePic = '/static/img/woman2.jpg'
-      this.agencyName = this.profile.agencyName
-      this.position = this.profile.position
     } else if (isDirector()) {
       this.profilePic = '/static/img/man1.jpg'
     }
@@ -378,7 +352,14 @@ export default {
       padding-bottom: $content-padding-bottom;
     }
 
-  @media screen and (max-width: 960px){
+  @media screen and (max-width: 600px){
+    .content {
+      padding-top: 0px !important;
+      padding-bottom: 150px !important;
+    }
+  }
+
+  @media screen and (max-width: 768px){
     .content {
       padding-top: 0px !important;
       padding-bottom: 150px !important;
@@ -422,6 +403,10 @@ export default {
 
     padding: 0px !important;
 
+  }
+
+  .card__media img {
+    box-shadow: 1px 1px 5px black !important;
   }
 
   .flexbar {

@@ -35,6 +35,10 @@ module.exports = {
 
     await queryInterface.bulkInsert('AuditionRequestStatuses', seeds["AuditionRequestStatuses"])
 
+    await queryInterface.bulkInsert('Languages', seeds["Languages"])
+    await queryInterface.bulkInsert('Skills', seeds["Skills"])
+    await queryInterface.bulkInsert('SkillLevels', seeds["SkillLevels"])
+
     var countries = JSON.parse(fs.readFileSync("./seeders/utils/countries.json"));
 
     // Add countries and their cities

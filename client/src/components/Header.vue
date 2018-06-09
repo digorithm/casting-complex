@@ -133,9 +133,10 @@ export default {
         ]
       }
       if (isLoggedIn() && isActor() && !isRegistrationInProgress()) {
+        var username = JSON.parse(localStorage.getItem('logged_profile')).user.username
         this.menuItems = [
           { title: 'Dashboard', path: '/actor-dashboard', icon: 'dashboard' },
-          { title: 'Profile', path: '/actor/digorithm', icon: 'person' },
+          { title: 'Profile', path: '/actor/' + username, icon: 'person' },
           { title: 'Messages', path: '/message', icon: 'message' },
           { title: 'Job board', path: '/job-board', icon: 'work' }
         ]

@@ -14,7 +14,7 @@ var HandleSequelizeError = utils.HandleSequelizeError;
 router.get('/', async function(req, res) {
   var extras = {};
 
-  var model = ["Ethnicity", "Credit", "Hair", "Role", "RosterType", "Union", "Gender", "Eye", "CastingSpecialization", "BreakdownStatus", "AuditionStatus", "AuditionRequestStatus", "AgencyDivision"];
+  var model = ["Ethnicity", "Credit", "Hair", "Role", "RosterType", "Union", "Gender", "Eye", "CastingSpecialization", "BreakdownStatus", "AuditionStatus", "AuditionRequestStatus", "AgencyDivision", "Language", "Skill"];
 
   for (m of model) {
     extras[m] = await models[m].findAll({attributes: ['id', 'name']})

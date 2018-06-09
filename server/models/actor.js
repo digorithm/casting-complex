@@ -15,6 +15,7 @@ module.exports = (sequelize, DataTypes) => {
     lastName: DataTypes.STRING,
     legalName: DataTypes.STRING,
     streetAddress: DataTypes.STRING,
+    zipPostal: DataTypes.STRING,
     phone: DataTypes.STRING,
     mobile: DataTypes.STRING,
     suite: DataTypes.STRING,
@@ -55,6 +56,18 @@ module.exports = (sequelize, DataTypes) => {
           as: "ethnicity"
         });
 
+        Actor.belongsToMany(models.Language, {
+          through: "Actor_Language",
+          foreignKey: "ActorId",
+          timestamps: false
+        });
+
+        Actor.belongsToMany(models.Skill, {
+          through: "Actor_Skill",
+          foreignKey: "ActorId",
+          timestamps: false
+        });
+
         Actor.belongsToMany(models.Credit, {
           through: "Actor_Credit",
           foreignKey: "actorId",
@@ -84,19 +97,65 @@ module.exports = (sequelize, DataTypes) => {
         Actor.hasMany(models.AuditionRequest);
 
         Actor.hasMany(models.Audition);
+
+        Actor.hasMany(models.Experience);
       }
     },
     instanceMethods: {
 
       buildResponse: async function() {
+
+        // This builds the full actor's profile response. All data in here is public to any user, it is what it's used on the actor's public profile.
+
+        var models = this.sequelize.models
+
         var actorUser = await this.getUser();
         var actorCredits = await this.getCredits();
         var actorUnions = await this.getUnions();
+        var actorLanguages = await this.getLanguages();
+        var actorSkills = await this.getSkills()
+        
+        var actorExperiences = await this.getExperiences()
+        
+        var experiences = []
+        // Get experience type's name, which is the same as Agency Division names
+        for (var experience of actorExperiences) {
+          var experienceJson = await experience.toJSON()
+          var modelInstance = await models.AgencyDivision.findById(experience.typeId)
+          experienceJson.type = modelInstance.name
+          experiences.push(experienceJson)
+        }
 
         var actorJson = this.toJSON();
         actorJson.user = await actorUser.buildResponse();
+
+        actorJson.Experiences = experiences;
+        
+        actorJson.languageId = actorLanguages.map(l => l.id);
+        actorJson.Languages = actorLanguages.map(l => l.name);
+        
+        actorJson.Skills = actorSkills.map(s => s.name);
+        actorJson.skillId = actorSkills.map(s => s.id);
+
         actorJson.creditId = actorCredits.map(c => c.id);
+        actorJson.Credits = actorCredits.map(c => c.name);
+
         actorJson.unionId = actorUnions.map(u => u.id);
+        actorJson.Unions = actorUnions.map(u => u.name);
+
+        var modelsToQuery = ["Country", "City", "Ethnicity", "Eye", "Hair", "Gender"]
+
+        for (var model of modelsToQuery) {
+          var modelString = String(model)
+          var columnName = modelString.charAt(0).toLowerCase() + modelString.substr(1) + 'Id'
+
+          if (actorJson[String(columnName)] === null) {
+            actorJson[String(model)] = ''
+          } else {
+            var modelInstance = await models[modelString].findById(actorJson[String(columnName)])
+            actorJson[String(model)] = modelInstance.name
+          }
+        }
 
         RemoveFields(actorJson.user, ["updatedAt", "createdAt", "password"])
         RemoveFields(actorJson, ["updatedAt", "createdAt"])

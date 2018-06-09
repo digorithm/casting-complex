@@ -14,22 +14,37 @@ var HandleSequelizeError = utils.HandleSequelizeError;
 
 
 router.get('/', async function(req, res) {
-  var actors = await models.Actor.findAll()
 
-  actorJsonPromises = [];
-  for (actor of actors) {
-    actorJsonPromise = actor.buildResponse();
-    actorJsonPromises.push(actorJsonPromise);
+  var username = req.query.username;
+  
+  //Query all actors
+  if (username === undefined) {
+    var actors = await models.Actor.findAll()
+
+    actorJsonPromises = [];
+    for (actor of actors) {
+      actorJsonPromise = actor.buildResponse();
+      actorJsonPromises.push(actorJsonPromise);
+    }
+
+    Promise.all(actorJsonPromises).then(actorsJson => {
+      return ReS(res, {data: actorsJson}, 200);
+    });
+  } else {
+    // Query by username
+    var user = await models.User.findOne({
+      where: { username: username }
+    })
+
+    var actor = await models.Actor.findOne({where: { userId: user.id }})
+
+    var actorJson = await actor.buildResponse();
+
+    return ReS(res, {data: actorJson}, 200)
   }
-
-  Promise.all(actorJsonPromises).then(actorsJson => {
-    return ReS(res, {data: actorsJson}, 200);
-  });
-
 });
 
 router.get('/:actor_id', async function(req, res) {
-  console.log("I should NOT be here")
   var actorId = req.params.actor_id;
   var actor = await models.Actor.findById(actorId);
   var actorJson = await actor.buildResponse();
@@ -65,8 +80,19 @@ router.post('/', async function(req, res) {
 });
 
 router.put('/', VerifyToken, async function(req, res, next) {
-
+  
   var actor = await models.Actor.findById(req.userId);
+
+  // Meaning that it wants to update user's email
+  if (req.body.user) {
+    try {
+      var user = await models.User.findById(req.baseId)
+      await user.update(req.body.user)
+    } catch (e) {
+      console.log(e)
+      return ReE(res, e, 500)
+    }
+  }
 
   if (req.body.creditId) {
     var currentCreditsId = await actor.getCredits().map(c => c.id);
@@ -82,10 +108,17 @@ router.put('/', VerifyToken, async function(req, res, next) {
     }
   }
 
+  if (req.body.languageId) {
+    var currentLanguagesId = await actor.getLanguages().map(l => l.id);
+    if (!_.isEqual(req.body.languageId,currentLanguagesId)) {
+      await actor.setLanguages(req.body.languageId);
+    }
+  }
+
   try {
     var updatedActor = await actor.update(req.body);
   } catch (e) {
-    return ReE(res, ErrorMessage.UnknownError, 400)
+    return ReE(res, ErrorMessage.UnknownError, 500)
   }
 
   var updatedActorJson = await updatedActor.buildResponse();
@@ -108,6 +141,97 @@ router.delete('/', VerifyToken, async function(req, res) {
     return HandleSequelizeError(res, e);
   }
   return ReS(res, {message: "User deleted"}, 204);
+  
+})
+
+router.post('/experiences', VerifyToken, async function(req, res) { 
+
+  try {
+    var actor = await models.Actor.findById(req.userId);
+
+    var experienceToAdd = req.body
+
+    var experienceInstance = await models.Experience.create(experienceToAdd)
+
+    var actorExperiences = await actor.getExperiences()
+    var experiences = []
+    // Get experience type's name, which is the same as Agency Division names
+    for (var experience of actorExperiences) {
+      var experienceJson = await experience.toJSON()
+      var modelInstance = await models.AgencyDivision.findById(experience.typeId)
+      experienceJson.type = modelInstance.name
+      experiences.push(experienceJson)
+    }
+  } catch (e) {
+    return ReE(res, ErrorMessage.UnknownError, 500)
+  }
+
+  return ReS(res, experiences, 201);
+})
+
+
+router.post('/skills', VerifyToken, async function(req, res) { 
+
+  var actor = await models.Actor.findById(req.userId);
+  
+  var actorSkills = await actor.getSkills()
+
+  // req.body will be an array of skills, the name, not the id
+  var skillsToUpdate = req.body
+
+  var skillInstances = await models.Skill.findAll(
+    { where: 
+      { 
+        name: { $or: skillsToUpdate }
+      }
+    })
+  var skillIdToBeAdded = skillInstances.map(s => s.id)
+  await actor.addSkill(skillIdToBeAdded)  
+  
+  // Add to skill database the skills that don't exist yet
+  var existingSkillNames = skillInstances.map(s => s.name)
+
+  var differences = _.differenceWith(skillsToUpdate, existingSkillNames)
+
+  for (difference of differences) {
+    var lowerCaseDiff = difference.toLowerCase().trim().replace(/\s\s+/g, ' ');
+    var capitalizedDiff = lowerCaseDiff.replace(/^\w/, c => c.toUpperCase())
+    
+    var skillObj = { name: capitalizedDiff }
+    
+    var newSkill = await models.Skill.create(skillObj)
+
+    await actor.addSkill(newSkill.id)
+  }
+
+  var updatedSkillsInstance = await actor.getSkills()
+
+  var updatedSkills = updatedSkillsInstance.map(function(s) { return { name: s.name, id: s.id }})
+
+  return ReS(res, updatedSkills, 200);
+  
+})
+
+router.delete('/skills', VerifyToken, async function(req, res) { 
+
+  var actor = await models.Actor.findById(req.userId);
+  // req.body will be an array of skills, the name, not the id
+  var skillToDelete = req.query.skill
+
+  var skillInstance = await models.Skill.findOne(
+    { where: 
+      { 
+        name: skillToDelete
+      }
+    })
+  
+  await actor.removeSkill(skillInstance.id)
+
+  var updatedSkillsInstance = await actor.getSkills()
+
+  var updatedSkills = updatedSkillsInstance.map(function(s) { return { name: s.name, id: s.id }})
+
+  return ReS(res, updatedSkills, 200);
   
 })
 
