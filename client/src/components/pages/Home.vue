@@ -18,7 +18,7 @@
           <v-flex lg4 md12 sm12 xs12>
             <v-layout column>
               <v-flex d-flex>
-                <v-card dark color="white">
+                <v-card class="home-card" dark color="white">
                   <v-card-text class="text-xs-center headline centered">Follow us!</v-card-text>
                   <v-layout row wrap>
                     <v-flex xs4>
@@ -49,7 +49,7 @@
                 </v-card>
               </v-flex>
               <v-flex d-flex>
-                  <v-card class="featured-actors">
+                  <v-card class="home-card featured-actors">
                     <v-container fluid grid-list-md>
                       <v-layout row>
                         <v-flex md7>
@@ -167,7 +167,7 @@ export default {
     }
   }
 
-  .card__text {
+  .home-card .card__text {
     color: black !important;
     text-align: left !important;
   }

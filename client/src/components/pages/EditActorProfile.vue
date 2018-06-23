@@ -348,12 +348,48 @@
                         </v-layout>
                         <v-divider></v-divider>
                         <v-layout row wrap>
+                          <v-dialog v-model="dialog" max-width="700px">
+                            <v-card>
+                              <v-card-title>
+                                <span class="headline">Edit experience</span>
+                              </v-card-title>
+                              <v-card-text>
+                                <v-container grid-list-md>
+                                  <v-layout wrap>
+                                    <v-flex xs12 sm6 md4>
+                                      <v-text-field v-model="editedExperience.project" label="Project name"></v-text-field>
+                                    </v-flex>
+                                    <v-flex xs12 sm6 md3>
+                                      <v-text-field v-model="editedExperience.role" label="Role"></v-text-field>
+                                    </v-flex>
+                                    <v-flex xs12 sm6 md3>
+                                      <v-select
+                                        autocomplete
+                                        :items="AgencyDivision"
+                                        item-text="name"
+                                        item-value="id"
+                                        v-model="editedExperience.typeId"
+                                        label="Type"
+                                      ></v-select>
+                                    </v-flex>
+                                    <v-flex xs12 sm6 md2>
+                                      <v-text-field v-model="editedExperience.year" label="Year"></v-text-field>
+                                    </v-flex>
+                                  </v-layout>
+                                </v-container>
+                              </v-card-text>
+                              <v-card-actions>
+                                <v-spacer></v-spacer>
+                                <v-btn color="blue darken-1" flat @click.native="close">Cancel</v-btn>
+                                <v-btn color="blue darken-1" flat @click.native="saveEditExperience">Save</v-btn>
+                              </v-card-actions>
+                            </v-card>
+                          </v-dialog>
                           <h3>Your experiences</h3>
                           <v-flex sm12>
                             <v-data-table
                             :headers="headers"
                             :items="experiences"
-                            hide-actions
                             :no-data-text="noExperience"
                           >
                             <template slot="items" slot-scope="props">
@@ -361,6 +397,14 @@
                               <td class="text-xs-left">{{ props.item.role }}</td>
                               <td class="text-xs-left">{{ props.item.type }}</td>
                               <td class="text-xs-left">{{ props.item.year }}</td>
+                              <td class="justify-center layout px-0">
+                                <v-btn icon class="mx-0" @click="editExperience(props.item)">
+                                  <v-icon color="teal">edit</v-icon>
+                                </v-btn>
+                                <v-btn icon class="mx-0" @click="deleteExperience(props.item)">
+                                  <v-icon color="pink">delete</v-icon>
+                                </v-btn>
+                              </td>
                             </template>
                           </v-data-table>
                           </v-flex>
@@ -485,6 +529,7 @@ export default {
       { text: 'Year', value: 'year' }],
       noExperience: 'No added experiences',
       Skills: [],
+      dialog: false,
       selectedSkill: '',
       snackbar: false,
       y: 'bottom',
@@ -539,7 +584,22 @@ export default {
       projectType: '',
       year: '',
       experiences: '',
-      validExperiences: ''
+      validExperiences: '',
+      editedIndex: -1,
+      editedExperience: {
+        id: '',
+        project: '',
+        role: '',
+        typeId: '',
+        year: ''
+      },
+      defaultExperience: {
+        id: '',
+        project: '',
+        role: '',
+        typeId: '',
+        year: ''
+      }
     }
   },
   watch: {
@@ -556,6 +616,74 @@ export default {
     this.getExtras()
   },
   methods: {
+    close () {
+      this.dialog = false
+      setTimeout(() => {
+        this.editedExperience = Object.assign({}, this.defaultExperience)
+        this.editedIndex = -1
+      }, 300)
+    },
+    saveEditExperience () {
+      this._saveEditExperience().then(data => {
+        var profileToUpdate = JSON.parse(localStorage.getItem('logged_profile'))
+        profileToUpdate.Experiences = data.data
+        localStorage.setItem('logged_profile', JSON.stringify(profileToUpdate))
+        this.mapActorToProps()
+        this.close()
+      }).catch(e => {
+        console.log(e)
+      })
+    },
+    _saveEditExperience () {
+      var config = {
+        headers: {
+          'x-access-token': localStorage.getItem('session_token'),
+          'Content-Type': undefined
+        }
+      }
+
+      return Axios.put(`${CastingComplexAPI}/actors/experiences/${this.editedExperience.id}`, this.editedExperience, config).then(function (response) {
+        return response
+      })
+        .catch(function (error) {
+          return Promise.reject(error.response.data)
+        })
+    },
+    editExperience (item) {
+      this.editedIndex = this.experiences.indexOf(item)
+      this.editedExperience = Object.assign({}, item)
+      this.dialog = true
+    },
+    deleteExperience (item) {
+      const index = this.experiences.indexOf(item)
+
+      if (confirm('Are you sure you want to delete this experience?')) {
+        this._deleteExperience(item.id).then(data => {
+          this.experiences.splice(index, 1)
+          var profileToUpdate = JSON.parse(localStorage.getItem('logged_profile'))
+          profileToUpdate.Experiences = data.data
+          localStorage.setItem('logged_profile', JSON.stringify(profileToUpdate))
+          this.mapActorToProps()
+        }).catch(e => {
+          console.log(e)
+        })
+      }
+    },
+    _deleteExperience (id) {
+      var data = {
+        headers: {
+          'x-access-token': localStorage.getItem('session_token'),
+          'Content-Type': undefined
+        }
+      }
+
+      return Axios.delete(`${CastingComplexAPI}/actors/experiences/${id}`, data).then(function (response) {
+        return response
+      })
+        .catch(function (error) {
+          return Promise.reject(error.response.data)
+        })
+    },
     addExperience () {
       this._addExperience().then(data => {
         var profileToUpdate = JSON.parse(localStorage.getItem('logged_profile'))
@@ -814,7 +942,6 @@ export default {
           this.Genders = data.data.data['Gender']
           this.AgencyDivision = data.data.data['AgencyDivision']
           this.Skills = data.data.data['Skill'].map(s => s.name)
-          console.log(this.Skills)
         }).catch((err) => {
           console.log(err)
         })

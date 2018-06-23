@@ -1,5 +1,5 @@
 <template>
-  <v-toolbar app class="primary hidden-sm-and-down" absolute dense prominent>
+  <v-toolbar app class="main-header primary hidden-sm-and-down" absolute dense prominent>
     <v-snackbar
       :timeout="timeout"
       :color="color"
@@ -64,6 +64,8 @@
 <script>
 import {bus} from '../main'
 import { logout, isLoggedIn, isActor, isAgent, isDirector, isRegistrationInProgress } from '@/components/authentication'
+import Axios from 'axios'
+const CastingComplexAPI = `http://${window.location.hostname}:5050`
 
 export default {
   data () {
@@ -88,8 +90,12 @@ export default {
       y: 'top',
       snackbar: false,
       timeout: 5000,
+      username: '',
       loginMessage: 'Hello, I\'m a snackbar',
-      profilePic: ''
+      profilePic: '',
+      profile: {
+        userId: ''
+      }
     }
   },
   mounted () {
@@ -97,12 +103,14 @@ export default {
     this.getCorrectToolbar()
   },
   created: function () {
+    this.profile.userId = JSON.parse(localStorage.getItem('logged_profile')).userId
+    this.username = JSON.parse(localStorage.getItem('logged_profile')).user.username
     if (isActor()) {
-      this.profilePic = '/static/img/actor3.jpg'
+      this.fetchAvatar()
     } else if (isAgent()) {
-      this.profilePic = '/static/img/woman2.jpg'
+      this.fetchAvatar()
     } else if (isDirector()) {
-      this.profilePic = '/static/img/man1.jpg'
+      this.fetchAvatar()
     }
     // Whenever we get a signal from the bus telling us that the user has logged in, we update the toolbar
     var vm = this
@@ -118,6 +126,15 @@ export default {
     })
   },
   methods: {
+    fetchAvatar () {
+      Axios.get(`${CastingComplexAPI}/users/${this.profile.userId}/photos/profile`)
+        .then((data) => {
+          var src = 'data:image/jpeg;base64,' + data.data.avatar
+          this.profilePic = src
+        }).catch((err) => {
+          console.log(err)
+        })
+    },
     openDialog () {
       // Send signal to open modal
       bus.$emit('dialog', true)
@@ -133,10 +150,9 @@ export default {
         ]
       }
       if (isLoggedIn() && isActor() && !isRegistrationInProgress()) {
-        var username = JSON.parse(localStorage.getItem('logged_profile')).user.username
         this.menuItems = [
           { title: 'Dashboard', path: '/actor-dashboard', icon: 'dashboard' },
-          { title: 'Profile', path: '/actor/' + username, icon: 'person' },
+          { title: 'Profile', path: '/actor/' + this.username, icon: 'person' },
           { title: 'Messages', path: '/message', icon: 'message' },
           { title: 'Job board', path: '/job-board', icon: 'work' }
         ]
@@ -144,7 +160,7 @@ export default {
       if (isLoggedIn() && isAgent() && !isRegistrationInProgress()) {
         this.menuItems = [
           { title: 'Dashboard', path: '/agent-dashboard', icon: 'dashboard' },
-          { title: 'Profile', path: '/agent-profile', icon: 'person' },
+          { title: 'Profile', path: '/agent/' + this.username, icon: 'person' },
           { title: 'Actors', path: '/manage-actors', icon: 'person' },
           { title: 'Messages', path: '/message', icon: 'message' },
           { title: 'Job board', path: '/job-board', icon: 'work' }
@@ -153,7 +169,7 @@ export default {
       if (isLoggedIn() && isDirector() && !isRegistrationInProgress()) {
         this.menuItems = [
           { title: 'Dashboard', path: '/director-dashboard', icon: 'dashboard' },
-          { title: 'Profile', path: '/director-profile', icon: 'person' },
+          { title: 'Profile', path: '/director/' + this.username, icon: 'person' },
           { title: 'Breakdowns', path: '/breakdowns', icon: 'work' },
           { title: 'Messages', path: '/message', icon: 'message' },
           { title: 'Job board', path: '/job-board', icon: 'work' }
@@ -196,13 +212,13 @@ export default {
   //   color: white !important;
   // }
 
-  .toolbar__extension {
+  .main-header .toolbar__extension {
     background-color: white !important;
   }
-  .toolbar__content {
+  .main-header .toolbar__content {
     height: $navbar-height !important;
   }
-  .toolbar__title-mod {
+  .main-header .toolbar__title-mod {
     font-size: 45px !important;
     color: white;
     font-family: $logo;

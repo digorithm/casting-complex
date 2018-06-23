@@ -53,12 +53,30 @@ module.exports = (sequelize, DataTypes) => {
     instanceMethods: {
     
       buildResponse: async function() {
+        var models = this.sequelize.models
+
         var castingDirectorUser = await this.getUser();
         var castingDirectorSpecializations = await this.getCastingSpecializations();
 
         var castingDirectorJson = this.toJSON();
         castingDirectorJson.user = castingDirectorUser.toJSON();
+
         castingDirectorJson.specializationId = castingDirectorSpecializations.map(s => s.id);
+        castingDirectorJson.specializations = castingDirectorSpecializations.map(s => s.name);
+
+        var modelsToQuery = ["Country", "City"]
+
+        for (var model of modelsToQuery) {
+          var modelString = String(model)
+          var columnName = modelString.charAt(0).toLowerCase() + modelString.substr(1) + 'Id'
+
+          if (castingDirectorJson[String(columnName)] === null) {
+            castingDirectorJson[String(model)] = ''
+          } else {
+            var modelInstance = await models[modelString].findById(castingDirectorJson[String(columnName)])
+            castingDirectorJson[String(model)] = modelInstance.name
+          }
+        }
 
         RemoveFields(castingDirectorJson.user, ["updatedAt", "createdAt", "password"])
         RemoveFields(castingDirectorJson, ["updatedAt", "createdAt"])

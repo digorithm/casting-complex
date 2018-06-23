@@ -2,16 +2,13 @@ var models  = require('../models');
 var express = require('express');
 var router  = express.Router();
 var _ = require('lodash');
-
 var VerifyToken = require('./verify_token');
-
 var utils  = require('../utils')
 
 var ReE = utils.ReE;
 var ReS = utils.ReS;
 var ErrorMessage = utils.ErrorMessage;
 var HandleSequelizeError = utils.HandleSequelizeError;
-
 
 router.get('/', async function(req, res) {
 
@@ -167,6 +164,54 @@ router.post('/experiences', VerifyToken, async function(req, res) {
   }
 
   return ReS(res, experiences, 201);
+})
+
+router.delete('/experiences/:exp_id', VerifyToken, async function(req, res) { 
+
+  try {
+    var actor = await models.Actor.findById(req.userId);
+
+    await models.Experience.destroy({where: {id: req.params.exp_id}})
+
+    var actorExperiences = await actor.getExperiences()
+    var experiences = []
+    // Get experience type's name, which is the same as Agency Division names
+    for (var experience of actorExperiences) {
+      var experienceJson = await experience.toJSON()
+      var modelInstance = await models.AgencyDivision.findById(experience.typeId)
+      experienceJson.type = modelInstance.name
+      experiences.push(experienceJson)
+    }
+  } catch (e) {
+    return ReE(res, ErrorMessage.UnknownError, 500)
+  }
+
+  return ReS(res, experiences, 200);
+})
+
+router.put('/experiences/:exp_id', VerifyToken, async function(req, res) { 
+
+  try {
+    var actor = await models.Actor.findById(req.userId);
+
+    var experienceToUpdate = await models.Experience.findById(req.params.exp_id)
+
+    await experienceToUpdate.update(req.body)
+
+    var actorExperiences = await actor.getExperiences()
+    var experiences = []
+    // Get experience type's name, which is the same as Agency Division names
+    for (var experience of actorExperiences) {
+      var experienceJson = await experience.toJSON()
+      var modelInstance = await models.AgencyDivision.findById(experience.typeId)
+      experienceJson.type = modelInstance.name
+      experiences.push(experienceJson)
+    }
+  } catch (e) {
+    return ReE(res, ErrorMessage.UnknownError, 500)
+  }
+
+  return ReS(res, experiences, 200);
 })
 
 

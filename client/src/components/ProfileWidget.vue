@@ -82,17 +82,26 @@ export default {
       }
     })()
     if (isActor()) {
-      this.profilePic = '/static/img/actor3.jpg'
+      this.fetchAvatar()
       this.getCityAndCountry()
     } else if (isAgent()) {
-      this.profilePic = '/static/img/woman2.jpg'
+      this.fetchAvatar()
       this.agencyName = this.profile.agencyName
       this.position = this.profile.position
     } else if (isDirector()) {
-      this.profilePic = '/static/img/man1.jpg'
+      this.fetchAvatar()
     }
   },
   methods: {
+    fetchAvatar () {
+      Axios.get(`${CastingComplexAPI}/users/${this.profile.userId}/photos/profile`)
+        .then((data) => {
+          var src = 'data:image/jpeg;base64,' + data.data.avatar
+          this.profilePic = src
+        }).catch((err) => {
+          console.log(err)
+        })
+    },
     getExtras (context) {
       Axios.get(`${CastingComplexAPI}/extras`)
         .then((data) => {

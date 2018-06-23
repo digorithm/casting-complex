@@ -62,14 +62,44 @@ module.exports = (sequelize, DataTypes) => {
     instanceMethods: {
       
       buildResponse: async function() {
+
+        var models = this.sequelize.models
+
         var agentUser = await this.getUser();
         var agentAgencyDivisions = await this.getAgencyDivisions();
         var agentRosterTypes = await this.getRosterTypes();
 
         var agentJson = this.toJSON();
         agentJson.user = agentUser.toJSON();
+
         agentJson.rosterTypeId = agentRosterTypes.map(r => r.id);
+        agentJson.rosterTypes = agentRosterTypes.map(r => r.name)
+
         agentJson.agencyDivisionId = agentAgencyDivisions.map(a => a.id);
+        agentJson.agencyDivisions = agentAgencyDivisions.map(a => a.name);
+
+        var agentActors = await this.getActors()
+        
+        var agentActorsJson = []
+        for (var actor of agentActors) {
+          var actorJson = await actor.buildResponse()
+          agentActorsJson.push(actorJson)
+        }
+        agentJson.actors = agentActorsJson
+
+        var modelsToQuery = ["Country", "City"]
+
+        for (var model of modelsToQuery) {
+          var modelString = String(model)
+          var columnName = modelString.charAt(0).toLowerCase() + modelString.substr(1) + 'Id'
+
+          if (agentJson[String(columnName)] === null) {
+            agentJson[String(model)] = ''
+          } else {
+            var modelInstance = await models[modelString].findById(agentJson[String(columnName)])
+            agentJson[String(model)] = modelInstance.name
+          }
+        }
 
         RemoveFields(agentJson.user, ["updatedAt", "createdAt", "password"])
         RemoveFields(agentJson, ["updatedAt", "createdAt"])

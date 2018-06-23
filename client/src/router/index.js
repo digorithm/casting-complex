@@ -11,8 +11,17 @@ import References from '@/components/pages/References'
 import ActorDashboard from '@/components/pages/ActorDashboard'
 import AgentDashboard from '@/components/pages/AgentDashboard'
 import DirectorDashboard from '@/components/pages/DirectorDashboard'
-import Profile from '@/components/pages/Profile'
+import ActorProfile from '@/components/pages/ActorProfile'
+import AgentProfile from '@/components/pages/AgentProfile'
 import EditActorProfile from '@/components/pages/EditActorProfile'
+import EditAgentProfile from '@/components/pages/EditAgentProfile'
+import DirectorProfile from '@/components/pages/DirectorProfile'
+import EditDirectorProfile from '@/components/pages/EditDirectorProfile'
+import DirectorBreakdowns from '@/components/pages/DirectorBreakdowns'
+import ManageBreakdown from '@/components/pages/ManageBreakdown'
+import JobBoard from '@/components/pages/JobBoard'
+
+import NotFound from '@/components/pages/NotFound'
 
 // Global components
 import Header from '@/components/Header'
@@ -26,6 +35,8 @@ import BreakdownWidget from '@/components/BreakdownWidget'
 import NewsWidget from '@/components/NewsWidget'
 import ActorsWidget from '@/components/ActorsWidget'
 
+import Lightbox from 'vue-simple-lightbox'
+
 // Register components
 Vue.component('app-header', Header)
 Vue.component('app-mobile-header', MobileHeader)
@@ -37,6 +48,7 @@ Vue.component('audition-request-widget', AuditionRequestWidget)
 Vue.component('breakdown-widget', BreakdownWidget)
 Vue.component('news-widget', NewsWidget)
 Vue.component('actors-widget', ActorsWidget)
+Vue.component('lightbox', Lightbox)
 
 Vue.use(Router)
 
@@ -136,7 +148,7 @@ export default new Router({
       path: '/actor/:username',
       name: 'Actor profile',
       components: {
-        default: Profile,
+        default: ActorProfile,
         header: Header,
         footer: Footer
       }
@@ -146,6 +158,87 @@ export default new Router({
       name: 'Edit actor profile',
       components: {
         default: EditActorProfile,
+        header: Header,
+        footer: Footer
+      }
+    },
+    {
+      path: '/agent/:username',
+      name: 'Agent profile',
+      components: {
+        default: AgentProfile,
+        header: Header,
+        footer: Footer
+      }
+    },
+    {
+      path: '/edit/agent',
+      name: 'Edit agent profile',
+      components: {
+        default: EditAgentProfile,
+        header: Header,
+        footer: Footer
+      }
+    },
+    {
+      path: '/director/:username',
+      name: 'Casting director profile',
+      components: {
+        default: DirectorProfile,
+        header: Header,
+        footer: Footer
+      }
+    },
+    {
+      path: '/edit/director',
+      name: 'Edit casting director profile',
+      components: {
+        default: EditDirectorProfile,
+        header: Header,
+        footer: Footer
+      }
+    },
+    {
+      path: '/breakdowns',
+      name: 'Director breakdowns',
+      components: {
+        default: DirectorBreakdowns,
+        header: Header,
+        footer: Footer
+      }
+    },
+    {
+      path: '/breakdowns/:breakdown_id/manage',
+      name: 'Manage breakdown',
+      components: {
+        default: ManageBreakdown,
+        header: Header,
+        footer: Footer
+      }
+    },
+    {
+      path: '/job-board',
+      name: 'Job board',
+      components: {
+        default: JobBoard,
+        header: Header,
+        footer: Footer
+      }
+    },
+    {
+      path: '/notFound',
+      name: 'Not found',
+      components: {
+        default: NotFound,
+        header: Header,
+        footer: Footer
+      }
+    },
+    {
+      path: '*',
+      name: 'Not found',
+      components: {
+        default: NotFound,
         header: Header,
         footer: Footer
       }

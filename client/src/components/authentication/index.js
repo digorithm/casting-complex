@@ -23,7 +23,6 @@ export function isRegistrationInProgress () {
 
 export function login (credentials) {
   return Axios.post(`${CastingComplexAPI}/login`, credentials).then(function (response) {
-    console.log(response.data)
     localStorage.setItem('session_token', response.data.session_token)
     localStorage.setItem('logged_profile', JSON.stringify(response.data.profile))
     localStorage.removeItem('registration_in_progress')
@@ -61,7 +60,6 @@ export function isDirector () {
 
 export function isAgent () {
   var roleId = JSON.parse(localStorage.getItem('logged_profile')).user.roleId
-  console.log(roleId)
   if (roleId === 3) {
     return true
   }

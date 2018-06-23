@@ -14,18 +14,35 @@ var HandleSequelizeError = utils.HandleSequelizeError;
 
 
 router.get('/', async function(req, res) {
-  var agents = await models.Agent.findAll()
 
-  agentJsonPromises = [];
-  for (agent of agents) {
-    agentJsonPromise = agent.buildResponse();
-    agentJsonPromises.push(agentJsonPromise);
+  var username = req.query.username;
+  
+  //Query all agents
+  if (username === undefined) {
+
+    var agents = await models.Agent.findAll()
+
+    agentJsonPromises = [];
+    for (agent of agents) {
+      agentJsonPromise = agent.buildResponse();
+      agentJsonPromises.push(agentJsonPromise);
+    }
+
+    Promise.all(agentJsonPromises).then(agentsJson => {
+      return ReS(res, {data: agentsJson}, 200);
+    });
+  } else {
+    // Query by username
+    var user = await models.User.findOne({
+      where: { username: username }
+    })
+
+    var agent = await models.Agent.findOne({where: { userId: user.id }})
+
+    var agentJson = await agent.buildResponse();
+
+    return ReS(res, {data: agentJson}, 200)
   }
-
-  Promise.all(agentJsonPromises).then(agentsJson => {
-    return ReS(res, {data: agentsJson}, 200);
-  });
-
 });
 
 router.get('/:agent_id', async function(req, res) {

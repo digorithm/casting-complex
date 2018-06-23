@@ -17,8 +17,16 @@ router.get('/', async function(req, res) {
 
   try {
     var breakdowns = await models.Breakdown.findAll();
-  
     var breakdownJsons = breakdowns.map(b => b.toJSON())
+
+    for (var [idx, breakdown] of breakdowns.entries()) {
+      var director = await models.CastingDirector.findById(breakdown.CastingDirectorId)
+      var fullName = director.firstName + ' ' + director.lastName
+      breakdownJsons[idx].directorName = fullName
+      var mediaType = await breakdown.getMediaType()
+      breakdownJsons[idx].mediaType = mediaType.name
+    }
+
   } catch (e) {
     return ReE(res, {error: e}, 500)
   }
@@ -33,6 +41,8 @@ router.get('/:breakdown_id', async function(req, res) {
 
     var breakdown = await models.Breakdown.findById(req.params.breakdown_id);
 
+    if (!breakdown) return ReE(res, {message: "not found"}, 404)
+
   } catch (e) {
     return ReE(res, {error: e}, 500)
   }  
@@ -41,8 +51,34 @@ router.get('/:breakdown_id', async function(req, res) {
 
 });
 
+// Get breakdowns of a given director
+router.get('/directors/:director_id', async function(req, res) {
+  
+  try {
+
+    var director = await models.CastingDirector.findById(req.params.director_id);
+
+    var breakdowns = await director.getBreakdown()
+
+    breakdownsJson = breakdowns.map(b => b.toJSON())
+
+    for (var [idx, breakdown] of breakdowns.entries()) {
+      var mediaType = await breakdown.getMediaType()
+      breakdownsJson[idx].mediaType = mediaType.name
+    }
+
+  } catch (e) {
+    return ReE(res, {error: e}, 500)
+  }  
+
+  return ReS(res, breakdownsJson, 200)
+
+});
+
 router.post('/', VerifyToken, async function(req, res) {
   var breakdownRequest = req.body
+  console.log(req.userId)
+  breakdownRequest.CastingDirectorId = req.userId
 
   var directorFromUser = await models.CastingDirector.findOne({
     where: {userId: req.baseId}
@@ -50,16 +86,16 @@ router.post('/', VerifyToken, async function(req, res) {
 
   if (directorFromUser == null) return ReE(res, {error: "No director found"}, 404);
 
-  if (breakdownRequest.castingDirectorId != directorFromUser.id) return ReE(res, {error: "Bad request"}, 400)
+  if (breakdownRequest.CastingDirectorId != directorFromUser.id) return ReE(res, {error: "Bad request"}, 400)
 
   var breakdown = await models.Breakdown.create(breakdownRequest);
 
-  await castingDirector.setBreakdown([breakdown]);
+  await directorFromUser.addBreakdown([breakdown]);
   await breakdown.setMediaType(breakdownRequest.mediaTypeId);
 
   var createdBreakdown = await models.Breakdown.findById(breakdown.id);
 
-  return ReS(res, {data: createdBreakdown.toJSON()}, 201)
+  return ReS(res, createdBreakdown.toJSON(), 201)
 
 });
 
@@ -139,7 +175,7 @@ router.post('/:breakdown_id/roles', VerifyToken, async function(req, res) {
   }
 
   try {
-    var role = await models.BreakdownRole.create({description: req.body.description, ageRange: req.body.ageRange, BreakdownId: breakdown.id})
+    var role = await models.BreakdownRole.create({description: req.body.description, ageRange: req.body.ageRange, BreakdownId: breakdown.id, name: req.body.name})
 
     var createdRole = await breakdown.addRole(role)
     
@@ -147,7 +183,7 @@ router.post('/:breakdown_id/roles', VerifyToken, async function(req, res) {
     return ReE(res, {error: e}, 500)
   }
 
-  return ReS(res, {data: role}, 201)
+  return ReS(res, {data: role.toJSON()}, 201)
 });
 
 router.get('/:breakdown_id/roles', async function(req, res) {

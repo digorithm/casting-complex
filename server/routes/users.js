@@ -1,6 +1,9 @@
 var models  = require('../models');
 var express = require('express');
 var router  = express.Router();
+var fs = require('fs')
+var multer  = require('multer')
+const path = require('path');
 
 var VerifyToken = require('./verify_token');
 
@@ -8,8 +11,29 @@ var utils  = require('../utils')
 
 var ReE = utils.ReE;
 var ReS = utils.ReS;
-var ErrorMessage = utils.ErrorMessage; 
+var ErrorMessage = utils.ErrorMessage;
 
+var avatarStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/')
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname)
+  }
+})
+
+var photoStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/')
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname)
+  }
+})
+
+
+var avatarUpload = multer({ storage: avatarStorage })
+var albumUpload = multer({ storage: photoStorage })
 
 router.get('/', async function(req, res) {
 
@@ -131,5 +155,162 @@ router.get('/messages/sent', VerifyToken, async function(req, res) {
 
   return ReS(res, {data: messageJson}, 200)
 });
+
+router.post('/photos/profile', VerifyToken, avatarUpload.single('avatar'), async function(req, res){
+  try {
+    if (!fs.existsSync('storage/')) {
+      fs.mkdirSync('storage/')
+    }
+
+    if (!fs.existsSync('storage/' + req.baseId)) {
+      fs.mkdirSync('storage/' + req.baseId)
+    }
+
+    // Check if there's an avatar already uploaded
+    var rootFolder = path.resolve(__dirname, '../')
+    var avatarPath = 'storage/' + req.baseId
+    var avatarFolder = rootFolder + '/'+  avatarPath
+
+    var dir = fs.readdirSync(avatarFolder)
+
+    // Move uploaded file to this user's avatar folder
+    var re = /(?:\.([^.]+))?$/;
+    var fileExtension = re.exec(req.file.originalname)
+
+    var uploadedPath = 'uploads/' + req.file.originalname
+    var destinationPath = 'storage/' + req.baseId + '/avatar' + fileExtension[0]
+    
+    fs.copyFileSync(uploadedPath, destinationPath)
+    
+  } catch (e) {
+    console.log(e)
+    return ReE(res, {error: e}, 500)
+  }
+  return ReS(res, {}, 200)
+});
+
+router.get('/:user_id/photos/profile', async function(req, res) {
+  /**
+   * User's avatar image is always (GET) /users/<ID>/photos/profile
+   * This info isn't stored in any database
+   */
+  try {
+    var rootFolder = path.resolve(__dirname, '../')
+    var avatarPath = 'storage/' + req.params.user_id
+
+    defaultImage = rootFolder + '/' + 'user.png'
+    var defaultImageFile = fs.readFileSync(defaultImage)
+
+    if (!fs.existsSync(avatarPath)) {
+      // no avatar set
+      // send generic image
+      return ReS(res, {avatar: defaultImageFile.toString('base64')}, 200)
+    }
+    
+    var avatarFolder = rootFolder + '/'+  avatarPath
+
+    var dir = fs.readdirSync(avatarFolder)
+
+    // Find the file called avatar or return default image if it isn't found
+    for (file of dir) {
+      if (file.split('.')[0] === 'avatar') {
+        var filePath = avatarFolder + '/' + file
+        var file = fs.readFileSync(filePath)
+        return ReS(res, {avatar: file.toString('base64')}, 200)
+      }
+    }
+    return ReS(res, {avatar: defaultImageFile.toString('base64')}, 200)
+    
+  } catch (e) {
+    console.log(e)
+  }
+})
+
+router.post('/photos', VerifyToken, albumUpload.array('album', 12), async function(req, res){
+
+  try {
+    if (!fs.existsSync('storage/')) {
+      fs.mkdirSync('storage/')
+    }
+
+    if (!fs.existsSync('storage/' + req.baseId)) {
+      fs.mkdirSync('storage/' + req.baseId)
+    }
+
+    if (!fs.existsSync('storage/' + req.baseId + '/album')) {
+      fs.mkdirSync('storage/' + req.baseId + '/album')
+    }
+    
+    // Check if there's an avatar already uploaded
+    var rootFolder = path.resolve(__dirname, '../')
+    var albumPath = rootFolder + '/storage/' + req.baseId + '/album'
+
+    for (file of req.files) {
+      var uploadedPath = 'uploads/' + file.originalname
+      var destinationPath = 'storage/' + req.baseId + '/album/' + file.originalname
+    
+      fs.copyFileSync(uploadedPath, destinationPath)
+    }
+    
+  } catch (e) {
+    console.log(e)
+    return ReE(res, {error: e}, 500)
+  }
+  return ReS(res, {}, 200)
+})
+
+router.get('/:user_id/photos', async function(req, res) {
+  /**
+   * User's avatar image is always (GET) /users/<ID>/photos/profile
+   * This info isn't stored in any database
+   */
+  try {
+    var rootFolder = path.resolve(__dirname, '../')
+    var albumPath = rootFolder + '/storage/' + req.params.user_id + '/album'
+
+    if (!fs.existsSync(albumPath)) {
+      // no avatar set
+      // send generic image
+      return ReS(res, {album: []}, 200)
+    }
+
+    var dir = fs.readdirSync(albumPath)
+
+    var photos = []
+    // Find the file called avatar or return default image if it isn't found
+    for (file of dir) {
+      var filePath = albumPath + '/' + file
+      var fileBase64 = fs.readFileSync(filePath).toString('base64')
+      photos.push({photo: fileBase64, name: file})
+    }
+    return ReS(res, {album: photos}, 200)
+    
+  } catch (e) {
+    console.log(e)
+  }
+})
+
+router.delete('/:user_id/photos', VerifyToken, async function(req, res) {
+  try {
+    var rootFolder = path.resolve(__dirname, '../')
+    var albumPath = rootFolder + '/storage/' + req.baseId + '/album'
+    var photoToDelete = albumPath + '/' + req.body.photo_name
+
+    if (!fs.existsSync(photoToDelete)) {
+      // no avatar set
+      // send generic image
+      return ReS(res, {message: "No photo found"}, 404)
+    }
+
+    fs.unlinkSync(photoToDelete)
+    
+    return ReS(res, {message: "photo deleted"}, 200)
+    
+  } catch (e) {
+    console.log(e)
+    return ReE(res, {error: e}, 500)
+  }
+})
+
 
 module.exports = router;

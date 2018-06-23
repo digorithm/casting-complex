@@ -24,7 +24,21 @@
                         :size=getProfilePicStyle()
                         :tile=true
                         >
-                          <img :src=profilePic />
+                          <img v-if="!isSelfViewing" :src=getProfilePic() />
+                          <v-tooltip top v-if="isSelfViewing">
+                            <input type="file"
+                              v-if="isSelfViewing"
+                              :id="uploadFieldName"
+                              :name="uploadFieldName"
+                              :disabled="isSaving"
+                              @change="fileChange($event.target.name, $event.target.files)"
+                              accept="image/*"
+                              class="input-file">
+                            <span>Update profile photo</span>
+                            <label slot="activator" :for=uploadFieldName >
+                              <img :src=profilePic />
+                            </label>
+                          </v-tooltip>
                         </v-avatar>
                   </v-flex>
                   <v-flex xs7 md3 lg4 xl3 sm4
@@ -84,7 +98,7 @@
                       </v-flex>
                       <v-flex xs11 md4 pt-3>
                         <h2> Details </h2>
-                        <v-layout row wrap align-center>
+                        <v-layout row wrap mt-1>
                           <v-flex xs3 md3>
                             Name:
                           </v-flex>
@@ -189,12 +203,78 @@
                       </v-flex>
                       </v-layout>
                       </template>
-
-                      <template v-if="!toggleInfo">
-                        Here are some photos
+                      <v-flex>
+                        <template v-if="!toggleInfo">
+                            <v-layout row wrap align-center>
+                              <v-flex ml-3 mt-2 class="text-xs-left">
+                                <h3>{{profile.fullname}}'s photos</h3>
+                              </v-flex>
+                              <v-spacer></v-spacer>
+                              <v-flex md2 mt-2 pr-1
+                                :class="{'pl-5': $vuetify.breakpoint.xlOnly}">
+                                <form enctype="multipart/form-data" novalidate v-if="(isInitial || isSaving) && isSelfViewing">
+                                    <input type="file" multiple :name="uploadAlbumFieldName" :id="uploadAlbumFieldName" :disabled="isSaving" @change="filesChange($event.target.name, $event.target.files); fileCount = $event.target.files.length" accept="image/*" class="upload-photos">
+                                    <label :for=uploadAlbumFieldName>
+                                      <template v-if="isSaving">
+                                      Uploading...
+                                      </template>
+                                      <template v-if="isInitial">
+                                      Add photos
+                                      </template>
+                                    </label>
+                                </form>
+                              </v-flex>
+                            </v-layout>
+                          <v-divider></v-divider>
+                          <v-container grid-list-md fluid>
+                          <v-layout row wrap>
+                            <v-flex
+                              v-for="(photo, key) in album"
+                              :key="key"
+                              xl2
+                              lg3
+                              xs4
+                            >
+                              <v-card flat tile>
+                                <v-card-media
+                                  height="200px"
+                                >
+                                  <img @click="viewPhoto(key, photo.name)" class="photo text-xs-center" :src=photo.photo>
+                                </v-card-media>
+                              </v-card>
+                            </v-flex>
+                          </v-layout>
+                        </v-container>
                       </template>
+                      </v-flex>
                 </v-card-text>
                 <v-divider></v-divider>
+                <template v-if="album.length > 0">
+                  <v-dialog v-model="displayPhoto" max-width="1000px">
+                      <v-card dark>
+                        <v-toolbar condensed card dark color="primary">
+                          <v-btn icon dark @click.native="displayPhoto=false">
+                            <v-icon>close</v-icon>
+                          </v-btn>
+                          <v-spacer></v-spacer>
+                          <v-btn v-if="isSelfViewing" color="error" @click="deletePhoto"><v-icon left>delete</v-icon> delete</v-btn>
+                        </v-toolbar>
+                        <v-layout row wrap justify-center align-center>
+                          <v-flex xs2 md2 justify-left>
+                            <v-btn color="primary" icon small @click="previousPhoto" ><v-icon>navigate_before</v-icon></v-btn>
+                          </v-flex>
+                          <v-flex xs8 md8>
+                            <v-card-text>
+                              <img class="view-photo" :src=album[viewPhotoIndex].photo>
+                            </v-card-text>
+                          </v-flex>
+                          <v-flex xs2 md2>
+                            <v-btn color="primary" icon small @click="nextPhoto"><v-icon>navigate_next</v-icon></v-btn>
+                          </v-flex>
+                        </v-layout>
+                      </v-card>
+                  </v-dialog>
+                </template>
               </v-card>
             </v-flex>
           </v-layout>
@@ -210,9 +290,19 @@ import Axios from 'axios'
 
 const CastingComplexAPI = `http://${window.location.hostname}:5050`
 
+const STATUS_INITIAL = 0
+const STATUS_SAVING = 1
+const STATUS_SUCCESS = 2
+const STATUS_FAILED = 3
+
 export default {
   data () {
     return {
+      displayPhoto: false,
+      rowsPerPageItems: [12],
+      pagination: {
+        rowsPerPage: 12
+      },
       isSelfViewing: true,
       isActorViewing: false,
       isAgentViewing: false,
@@ -233,7 +323,9 @@ export default {
       isActor: isActor(),
       isDirector: isDirector(),
       profilePic: '',
+      album: [],
       profile: {
+        userId: '',
         fullname: '',
         role: '',
         age: '',
@@ -250,7 +342,13 @@ export default {
         experience: [],
         languages: [],
         biography: ''
-      }
+      },
+      uploadedFiles: [],
+      uploadError: null,
+      currentStatus: null,
+      uploadFieldName: 'photos',
+      uploadAlbumFieldName: 'album',
+      viewPhotoIndex: 0
     }
   },
   beforeCreate () {
@@ -260,6 +358,21 @@ export default {
   },
   mounted () {
     this.fetchActor(this.$route.params.username)
+    this.reset()
+  },
+  computed: {
+    isInitial () {
+      return this.currentStatus === STATUS_INITIAL
+    },
+    isSaving () {
+      return this.currentStatus === STATUS_SAVING
+    },
+    isSuccess () {
+      return this.currentStatus === STATUS_SUCCESS
+    },
+    isFailed () {
+      return this.currentStatus === STATUS_FAILED
+    }
   },
   methods: {
     fetchActor (username) {
@@ -282,8 +395,9 @@ export default {
           this.profile.isRepped = profile.isRepresented
           this.profile.from = profile.City + ', ' + profile.Country
           this.profile.biography = profile.profile
-
-          console.log(profile.Experiences.type)
+          this.profile.userId = profile.userId
+          this.getProfilePic()
+          this.fetchAlbum()
         }).catch((err) => {
           console.log(err)
         })
@@ -325,20 +439,164 @@ export default {
         return '180px'
       }
     },
+    getProfilePic () {
+      this.fetchAvatar().then(src => {
+        this.profilePic = src
+      })
+    },
+    fetchAvatar () {
+      return Axios.get(`${CastingComplexAPI}/users/${this.profile.userId}/photos/profile`)
+        .then((data) => {
+          var src = 'data:image/jpeg;base64,' + data.data.avatar
+          return src
+        }).catch((err) => {
+          console.log(err)
+        })
+    },
+    fetchAlbum () {
+      Axios.get(`${CastingComplexAPI}/users/${this.profile.userId}/photos`)
+        .then((data) => {
+          this.album = data.data.album.map(function (p) {
+            return { photo: 'data:image/jpeg;base64,' + p.photo, name: p.name }
+          })
+        }).catch((err) => {
+          console.log(err)
+        })
+    },
     showInfo () {
       this.toggleInfo = true
     },
     showAlbum () {
       this.toggleInfo = false
-    }
-  },
-  created () {
-    if (isActor()) {
-      this.profilePic = '/static/img/actor3.jpg'
-    } else if (isAgent()) {
-      this.profilePic = '/static/img/woman2.jpg'
-    } else if (isDirector()) {
-      this.profilePic = '/static/img/man1.jpg'
+    },
+    reset () {
+      // reset form to initial state
+      this.currentStatus = STATUS_INITIAL
+      this.uploadedFiles = []
+      this.uploadError = null
+    },
+    wait (ms) {
+      return (x) => {
+        return new Promise(resolve => setTimeout(() => resolve(x), ms))
+      }
+    },
+    save (formData) {
+      // upload data to the server
+      this.currentStatus = STATUS_SAVING
+
+      this.upload(formData)
+        .then(x => {
+          this.uploadedFiles = [].concat(x)
+          this.currentStatus = STATUS_SUCCESS
+          this.getProfilePic()
+        })
+        .catch(err => {
+          this.uploadError = err.response
+          this.currentStatus = STATUS_FAILED
+          console.log(err)
+        })
+    },
+    saveAlbum (formData) {
+      // upload data to the server
+      this.currentStatus = STATUS_SAVING
+
+      this.uploadAlbum(formData)
+        .then(this.wait(2500))
+        .then(x => {
+          this.uploadedFiles = [].concat(x)
+          this.currentStatus = STATUS_SUCCESS
+          this.reset()
+          this.fetchAlbum()
+        })
+        .catch(err => {
+          this.albumUploadError = err.response
+          this.currentStatus = STATUS_FAILED
+          console.log(err)
+          this.reset()
+        })
+    },
+    uploadAlbum (formData) {
+      var config = {
+        headers: {
+          'x-access-token': localStorage.getItem('session_token'),
+          'Content-Type': undefined
+        }
+      }
+
+      const url = `${CastingComplexAPI}/users/photos`
+      return Axios.post(url, formData, config)
+        .then(x => console.log(x))
+    },
+    upload (formData) {
+      var config = {
+        headers: {
+          'x-access-token': localStorage.getItem('session_token'),
+          'Content-Type': undefined
+        }
+      }
+
+      const url = `${CastingComplexAPI}/users/photos/profile`
+      return Axios.post(url, formData, config)
+        .then(x => console.log(x))
+    },
+    filesChange (fieldName, fileList) {
+      console.log(fieldName)
+      // handle file changes when uploading album photos
+      const formData = new FormData()
+
+      if (!fileList.length) return
+
+      // append the files to FormData
+      Array
+        .from(Array(fileList.length).keys())
+        .map(x => {
+          formData.append(fieldName, fileList[x], fileList[x].name)
+        })
+
+      // save it
+      this.saveAlbum(formData)
+    },
+    fileChange (fieldName, fileList) {
+      // handle file changes when uploading profile pic
+      const formData = new FormData()
+      formData.append('avatar', fileList[0])
+      this.save(formData)
+    },
+    viewPhoto (index, name) {
+      console.log('Index is: ' + index)
+      console.log('Name is: ' + name)
+      this.viewPhotoIndex = index
+      this.displayPhoto = true
+    },
+    nextPhoto () {
+      var albumLength = this.album.length
+      this.viewPhotoIndex + 1 === albumLength ? this.viewPhotoIndex = 0 : this.viewPhotoIndex += 1
+    },
+    previousPhoto () {
+      var albumLength = this.album.length
+      this.viewPhotoIndex === 0 ? this.viewPhotoIndex = albumLength - 1 : this.viewPhotoIndex -= 1
+    },
+    deletePhoto () {
+      if (!confirm('Are you sure you want to delete this photo?')) return
+
+      var data = {
+        headers: {
+          'x-access-token': localStorage.getItem('session_token'),
+          'Content-Type': undefined
+        },
+        data: { photo_name: this.album[this.viewPhotoIndex].name }
+      }
+      Axios.delete(`${CastingComplexAPI}/users/${this.profile.userId}/photos`, data)
+        .then((data) => {
+          console.log(data)
+          this.album.splice(this.viewPhotoIndex, 1)
+          if (this.album.length === 0) {
+            this.viewPhotoIndex = 0
+            this.displayPhoto = false
+          }
+        }).catch((err) => {
+          console.log(err)
+        })
     }
   }
 }
@@ -397,6 +655,7 @@ export default {
 
   .card__media img {
     border:1px solid white !important;
+    background-color: white !important;
   }
 
   .card-mod .card__text {
@@ -407,17 +666,22 @@ export default {
 
   .card__media img {
     box-shadow: 1px 1px 5px black !important;
+    cursor: pointer !important;
   }
 
   .flexbar {
-    margin-top: -50px !important;
+    margin-top: -50px!important;
     border-bottom: solid 1px #e4e4e4 !important;
     background-color: white !important;
     max-height:50px !important;
+    height: 50px !important;
+  }
+
+  .toolbar__content {
+    height: 50px !important;
   }
 
   .flexbar-items {
-    margin-top: -30px !important;
     height:50px !important;
   }
 
@@ -446,6 +710,97 @@ export default {
       padding-left: 0px !important;
       padding-right: 0px !important;
       margin-bottom: 30px !important;
+    }
+  }
+
+  .input-file {
+    width: 0.1px;
+    height: 0.1px;
+    opacity: 0;
+    overflow: hidden;
+    position: absolute;
+    z-index: -1;
+  }
+
+  .input-file + label {
+    text-align: center;
+    width: 100%;
+    font-size: 1.25em;
+    font-weight: 700;
+    display: inline-block;
+    cursor: pointer !important; /* "hand" cursor */
+  }
+
+   .upload-photos {
+    width: 0.1px;
+    height: 0.1px;
+    opacity: 0;
+    overflow: hidden;
+    position: absolute;
+    z-index: -1;
+  }
+
+  .upload-photos + label {
+    font-size: 1.00em;
+    font-weight: 700;
+    color: white;
+    padding: 10px 10px;
+    border-radius: 5px;
+    background-color: #085f89;
+    display: inline-block;
+    cursor: pointer;
+    z-index: 999999999999999999999999;
+  }
+
+  .upload-photos + label:hover {
+      background-color: #267297;
+  }
+
+  .dropbox {
+    outline-offset: -10px;
+    background: #085f89;
+    color: white;
+    padding: 10px 10px;
+    min-height: 200px; /* minimum height */
+    position: relative;
+    cursor: pointer;
+  }
+
+  .dropbox:hover {
+    background: #267297; /* when mouse over to the drop zone, change color */
+  }
+
+  .dropbox p {
+    font-size: 1.2em;
+    text-align: center;
+    padding: 50px 0;
+  }
+
+  div.gallery {
+    width: 130px;
+    height: 130px;
+    overflow: hidden;
+}
+
+.photo {
+  object-fit: cover;
+}
+
+  div.gallery > img {
+    object-fit: cover;
+    width: 130px;
+    height: 130px;
+    float: left;
+    cursor: pointer !important;
+  }
+
+  .view-photo {
+    max-width: 500px;
+  }
+
+  @media screen and (max-width: 600px){
+    .view-photo {
+      max-width: 200px;
     }
   }
 

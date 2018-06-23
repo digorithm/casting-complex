@@ -159,7 +159,6 @@ module.exports = (sequelize, DataTypes) => {
 
         RemoveFields(actorJson.user, ["updatedAt", "createdAt", "password"])
         RemoveFields(actorJson, ["updatedAt", "createdAt"])
-
         return actorJson
       },
       createSession: async function() {

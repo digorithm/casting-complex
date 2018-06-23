@@ -14,18 +14,37 @@ var HandleSequelizeError = utils.HandleSequelizeError;
 
 
 router.get('/', async function(req, res) {
-  var castingDirectors = await models.CastingDirector.findAll()
 
-  castingDirectorJsonPromises = [];
-  for (castingDirector of castingDirectors) {
-    castingDirectorJsonPromise = castingDirector.buildResponse();
-    castingDirectorJsonPromises.push(castingDirectorJsonPromise);
+  var username = req.query.username;
+  
+  //Query all agents
+  if (username === undefined) {
+
+    var castingDirectors = await models.CastingDirector.findAll()
+
+    castingDirectorJsonPromises = [];
+    for (castingDirector of castingDirectors) {
+      castingDirectorJsonPromise = castingDirector.buildResponse();
+      castingDirectorJsonPromises.push(castingDirectorJsonPromise);
+    }
+
+    Promise.all(castingDirectorJsonPromises).then(castingDirectorsJson => {
+      return ReS(res, {data: castingDirectorsJson}, 200);
+    });
   }
-
-  Promise.all(castingDirectorJsonPromises).then(castingDirectorsJson => {
-    return ReS(res, {data: castingDirectorsJson}, 200);
-  });
-
+    else {
+      // Query by username
+      var user = await models.User.findOne({
+        where: { username: username }
+      })
+  
+      var castingDirector = await models.CastingDirector.findOne({where: { userId: user.id }})
+  
+      var castingDirectorJson = await castingDirector.buildResponse();
+  
+      return ReS(res, {data: castingDirectorJson}, 200)
+  }
+    
 });
 
 router.get('/:casting_director_id', async function(req, res) {
