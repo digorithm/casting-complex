@@ -24,7 +24,7 @@
                         :size=getProfilePicStyle()
                         :tile=true
                         >
-                          <img v-if="!isSelfViewing" :src=getProfilePic() />
+                          <img v-if="!isSelfViewing" :src=profile.avatar />
                           <v-tooltip top v-if="isSelfViewing">
                             <input type="file"
                               v-if="isSelfViewing"
@@ -36,7 +36,7 @@
                               class="input-file">
                             <span>Update profile photo</span>
                             <label slot="activator" :for=uploadFieldName >
-                              <img :src=profilePic />
+                              <img :src=profile.avatar />
                             </label>
                           </v-tooltip>
                         </v-avatar>
@@ -180,21 +180,20 @@
                         <v-btn outline small round color="primary" v-for="union in profile.unions" :key="union">{{union}}</v-btn>
                         <v-divider></v-divider>
 
-                        <template v-if="!isRepped">
+                        <template v-if="!profile.isRepped">
                           <h4>{{profile.fullname}} does not have an agent.</h4>
 
                           <v-btn v-if="isAgentViewing" small block color="primary"> Click here to hire this actor </v-btn>
                         </template>
 
-                        <template v-if="isRepped">
+                        <template v-if="profile.isRepped">
                           <h3>Representation</h3>
-                          {{profile.fullname}} is represented by <strong>John Doe</strong> (<a href='/'>@JohnDoe</a>) from <strong>The Casting Agency</strong>.
+                          {{profile.fullname}} is represented by <strong><router-link :to="{ name: 'Agent profile', params: { username: profile.agent.username }}">{{profile.agent.name}}</router-link></strong> from <strong>{{profile.agent.agencyName}}</strong>.
                         </template>
 
                         <template v-if="isSelfViewing">
                           <v-btn small to="/edit/actor" block color="primary"> Edit your profile </v-btn>
                         </template>
-
                         <template v-if="isDirectorViewing">
                           <v-divider></v-divider>
                           <v-btn small block color="primary"> Invite for an audition</v-btn>
@@ -285,7 +284,7 @@
 </template>
 
 <script>
-import { isLoggedIn, isActor, isAgent, isDirector } from '@/components/authentication'
+import { getProfile, isLoggedIn, isActor, isAgent, isDirector } from '@/components/authentication'
 import Axios from 'axios'
 
 const CastingComplexAPI = `http://${window.location.hostname}:5050`
@@ -303,11 +302,10 @@ export default {
       pagination: {
         rowsPerPage: 12
       },
-      isSelfViewing: true,
+      isSelfViewing: false,
       isActorViewing: false,
       isAgentViewing: false,
       isDirectorViewing: false,
-      isRepped: false,
       headers: [{
         text: 'Project',
         align: 'left',
@@ -341,14 +339,16 @@ export default {
         isRepped: '',
         experience: [],
         languages: [],
-        biography: ''
+        biography: '',
+        agent: ''
       },
       uploadedFiles: [],
       uploadError: null,
       currentStatus: null,
       uploadFieldName: 'photos',
       uploadAlbumFieldName: 'album',
-      viewPhotoIndex: 0
+      viewPhotoIndex: 0,
+      viewerProfile: ''
     }
   },
   beforeCreate () {
@@ -359,6 +359,7 @@ export default {
   mounted () {
     this.fetchActor(this.$route.params.username)
     this.reset()
+    this.viewerProfile = getProfile()
   },
   computed: {
     isInitial () {
@@ -375,6 +376,21 @@ export default {
     }
   },
   methods: {
+    defineViewer () {
+      if (this.viewerProfile.user.id !== this.profile.userId) {
+        this.isSelfViewing = false
+
+        if (this.isActor) this.isActorViewing = true
+        if (this.isAgent) this.isAgentViewing = true
+        if (this.isDirector) this.isDirectorViewing = true
+      } else {
+        this.isSelfViewing = true
+      } 
+      console.log('Is self viewing: ' + this.isSelfViewing)
+      console.log('Is actor viewing: ' + this.isActorViewing)
+      console.log('Is director viewing: ' + this.isDirectorViewing)
+      console.log('Is agent viewing: ' + this.isAgentViewing)
+    },
     fetchActor (username) {
       Axios.get(`${CastingComplexAPI}/actors/?username=${username}`)
         .then((data) => {
@@ -396,7 +412,15 @@ export default {
           this.profile.from = profile.City + ', ' + profile.Country
           this.profile.biography = profile.profile
           this.profile.userId = profile.userId
+          this.profile.avatar = profile.user.avatar
+
+          if (this.profile.isRepped) {
+            this.profile.agent = profile.agent
+          }
+          console.log(JSON.stringify(this.profile.agent))
+
           this.getProfilePic()
+          this.defineViewer()
           this.fetchAlbum()
         }).catch((err) => {
           console.log(err)

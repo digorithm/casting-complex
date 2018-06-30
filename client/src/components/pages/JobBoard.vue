@@ -6,14 +6,14 @@
       <v-content>
         <v-container fluid grid-list-md>
           <v-layout row wrap justify-center>
-            <v-flex md4 lg2>
+            <v-flex md4 lg3 xl2>
               <v-card>
                 <v-card-text>
                   <v-layout column>
                     <v-text-field
-                      v-model="search"
+                      v-model="searchQuery.searchString"
                       append-icon="search"
-                      label="Search"
+                      label="Search by name"
                       single-line
                       hide-details
                     ></v-text-field>
@@ -27,11 +27,21 @@
                       autocomplete
                       chips
                     ></v-select>
-                    <v-checkbox
-                      label="Requires unions?"
-                      v-model="searchQuery.requiresUnion"
-                    ></v-checkbox>
-                    <v-btn color="primary" flat block dark>Search
+                    <v-radio-group v-model="searchQuery.requiresUnion">
+                      <v-radio
+                        label="Requires union"
+                        value="1"
+                      ></v-radio>
+                      <v-radio
+                        label="Does not require union"
+                        value="2"
+                      ></v-radio>
+                      <v-radio
+                        label="Both"
+                        value="3"
+                      ></v-radio>
+                    </v-radio-group>
+                    <v-btn @click="searchBreakdown()" color="primary" flat block dark>Search
                       <v-icon dark right>search</v-icon>
                     </v-btn>
                   </v-layout>
@@ -83,7 +93,7 @@
                             <h4>Casting director:</h4>
                             <p>{{props.item.directorName}}</p>
                           </div>
-                          <v-btn small block color="primary">
+                          <v-btn :to="getLink(props.item.id)" small block color="primary">
                             <v-icon small left>open_in_new</v-icon> View job
                           </v-btn>
                         </v-flex>
@@ -103,6 +113,7 @@
 
 <script>
 import Axios from 'axios'
+import _ from 'lodash'
 
 const CastingComplexAPI = `http://${window.location.hostname}:5050`
 
@@ -120,12 +131,22 @@ export default {
       },
       allBreakdowns: [],
       MediaTypes: [],
+      emptySearchQuery: {
+        requiresUnion: '3',
+        mediaType: [],
+        searchString: ''
+      },
       searchQuery: {
-        requiresUnion: false
+        requiresUnion: '3',
+        mediaType: [],
+        searchString: ''
       }
     }
   },
   methods: {
+    getLink (id) {
+      return '/breakdowns/' + id
+    },
     fetchBreakdowns () {
       Axios.get(`${CastingComplexAPI}/breakdowns`).then(response => {
         this.allBreakdowns = response.data.data
@@ -140,6 +161,18 @@ export default {
           this.MediaTypes = data.data.data['AgencyDivision']
         }).catch((err) => {
           console.log(err)
+        })
+    },
+    searchBreakdown () {
+      if (_.isEqual(this.emptySearchQuery, this.searchQuery)) {
+        this.fetchBreakdowns()
+        return
+      }
+      Axios.get(`${CastingComplexAPI}/breakdowns?searchQuery=${JSON.stringify(this.searchQuery)}`).then(response => {
+        this.allBreakdowns = response.data.data
+      })
+        .catch(function (error) {
+          console.log(error)
         })
     }
   }

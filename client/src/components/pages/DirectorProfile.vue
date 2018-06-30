@@ -24,7 +24,7 @@
                         :size=getProfilePicStyle()
                         :tile=true
                         >
-                          <img v-if="!isSelfViewing" :src=getProfilePic() />
+                          <img v-if="!isSelfViewing" :src=profile.avatar />
                           <v-tooltip top v-if="isSelfViewing">
                             <input type="file"
                               v-if="isSelfViewing"
@@ -36,7 +36,7 @@
                               class="input-file">
                             <span>Update profile photo</span>
                             <label slot="activator" :for=uploadFieldName >
-                              <img :src=profilePic />
+                              <img :src=profile.avatar />
                             </label>
                           </v-tooltip>
                         </v-avatar>
@@ -270,7 +270,8 @@ export default {
         website: '',
         specializations: [],
         from: '',
-        biography: ''
+        biography: '',
+        avatar: ''
       },
       uploadedFiles: [],
       uploadError: null,
@@ -323,6 +324,7 @@ export default {
           this.profile.position = profile.position
           this.profile.website = profile.website
           this.profile.specializations = profile.specializations
+          this.profile.avatar = profile.user.avatar
           this.fetchAlbum()
           this.getProfilePic()
         }).catch((err) => {

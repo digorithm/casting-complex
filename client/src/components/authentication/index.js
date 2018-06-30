@@ -13,6 +13,15 @@ export function isLoggedIn () {
   return false
 }
 
+export function getProfile () {
+  var profile = localStorage.getItem('logged_profile')
+
+  if (profile) {
+    return JSON.parse(profile)
+  }
+  return {}
+}
+
 export function isRegistrationInProgress () {
   var registrationInProgress = localStorage.getItem('registration_in_progress')
   if (registrationInProgress === null) {

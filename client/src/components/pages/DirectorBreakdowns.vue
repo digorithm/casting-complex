@@ -16,6 +16,11 @@
                         <h1>Your breakdowns</h1>
                       </v-breadcrumbs-item>
                     </v-breadcrumbs>
+                    <v-spacer></v-spacer>
+                    <v-btn :to="{name: 'Search actor'}" color="primary">
+                      <v-icon left>search</v-icon>
+                      Search actors
+                    </v-btn>
                   </v-card-title>
                   <v-card-text>
                     <v-divider></v-divider>
@@ -435,7 +440,6 @@ export default {
       this.addBreakdownDialog = true
     },
     submit () {
-      console.log(this.isEditingBreakdown)
       if (this.$refs.form.validate() && !this.isEditingBreakdown) {
         console.log(JSON.stringify(this.form))
         this._submitBreakdown(this.form).then(res => {

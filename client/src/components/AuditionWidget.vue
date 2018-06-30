@@ -13,9 +13,9 @@
         v-if="isAgent || isDirector"
       >
         <template slot="items" slot-scope="props">
-          <td>{{ props.item.breakdown }}</td>
-          <td>{{ props.item.actor }}</td>
-          <td class="text-xs-left">{{ props.item.date }}</td>
+          <td>{{ props.item.project }}</td>
+          <td>{{ props.item.actorName }}</td>
+          <td class="text-xs-left">{{ props.item.startsWhen }}</td>
         </template>
       </v-data-table>
       <v-data-table
@@ -26,9 +26,9 @@
         v-if="isActor"
       >
         <template slot="items" slot-scope="props">
-          <td>{{ props.item.breakdown }}</td>
+          <td>{{ props.item.project }}</td>
           <td class="text-xs-left">{{ props.item.address }}</td>
-          <td class="text-xs-left">{{ props.item.date }}</td>
+          <td class="text-xs-left">{{ props.item.startsWhen }}</td>
         </template>
       </v-data-table>
       <v-layout justify-center>
@@ -139,6 +139,7 @@ export default {
       } else if (this.isDirector) {
         Axios.get(`${CastingComplexAPI}/castingdirectors/${userId}/auditions`, config).then((response) => {
           this.actorsAuditions = response.data
+          console.log(response.data)
         }).catch(error => { console.log(error) })
       }
     }

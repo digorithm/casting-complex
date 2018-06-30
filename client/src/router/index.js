@@ -20,6 +20,9 @@ import EditDirectorProfile from '@/components/pages/EditDirectorProfile'
 import DirectorBreakdowns from '@/components/pages/DirectorBreakdowns'
 import ManageBreakdown from '@/components/pages/ManageBreakdown'
 import JobBoard from '@/components/pages/JobBoard'
+import Breakdown from '@/components/pages/Breakdown'
+import SearchActor from '@/components/pages/SearchActor'
+import ManageActors from '@/components/pages/ManageActors'
 
 import NotFound from '@/components/pages/NotFound'
 
@@ -221,6 +224,33 @@ export default new Router({
       name: 'Job board',
       components: {
         default: JobBoard,
+        header: Header,
+        footer: Footer
+      }
+    },
+    {
+      path: '/breakdowns/:breakdown_id',
+      name: 'Breakdown page',
+      components: {
+        default: Breakdown,
+        header: Header,
+        footer: Footer
+      }
+    },
+    {
+      path: '/search-actor',
+      name: 'Search actor',
+      components: {
+        default: SearchActor,
+        header: Header,
+        footer: Footer
+      }
+    },
+    {
+      path: '/manage-actors',
+      name: 'Manage actors',
+      components: {
+        default: ManageActors,
         header: Header,
         footer: Footer
       }

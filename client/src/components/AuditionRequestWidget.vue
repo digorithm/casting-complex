@@ -12,9 +12,9 @@
         hide-actions
       >
         <template slot="items" slot-scope="props">
-          <td>{{ props.item.breakdown }}</td>
+          <td>{{ props.item.Breakdown.name }}</td>
           <td class="text-xs-left">{{ props.item.role }}</td>
-          <td class="text-xs-left">{{ props.item.status }}</td>
+          <td class="text-xs-left">{{ getStatusText(props.item.statusId) }}</td>
         </template>
       </v-data-table>
     <v-card-actions>
@@ -71,6 +71,11 @@ export default {
     this.fetchAuditionRequests()
   },
   methods: {
+    getStatusText (AuditionRequestStatusId) {
+      if (AuditionRequestStatusId === 1) return 'Pending'
+      if (AuditionRequestStatusId === 2) return 'Approved'
+      if (AuditionRequestStatusId === 3) return 'Rejected'
+    },
     fetchAuditionRequests () {
       var config = {
         headers: {
@@ -80,7 +85,6 @@ export default {
       }
       var actorId = JSON.parse(localStorage.getItem('logged_profile')).id
       Axios.get(`${CastingComplexAPI}/actors/${actorId}/auditions/requests`, config).then((response) => {
-        console.log(response)
         this.auditionRequests = response.data
       }).catch(error => { console.log(error) })
     }

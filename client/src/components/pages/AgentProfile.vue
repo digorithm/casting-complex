@@ -24,7 +24,7 @@
                         :size=getProfilePicStyle()
                         :tile=true
                         >
-                          <img v-if="!isSelfViewing" :src=getProfilePic() />
+                          <img v-if="!isSelfViewing" :src=profile.avatar />
                           <v-tooltip top v-if="isSelfViewing">
                             <input type="file"
                               v-if="isSelfViewing"
@@ -36,7 +36,7 @@
                               class="input-file">
                             <span>Update profile photo</span>
                             <label slot="activator" :for=uploadFieldName >
-                              <img :src=profilePic />
+                              <img :src=profile.avatar />
                             </label>
                           </v-tooltip>
                         </v-avatar>
@@ -155,6 +155,18 @@
                           <template v-if="isSelfViewing">
                             <v-btn small to="/edit/agent" block color="primary"> Edit your profile </v-btn>
                           </template>
+                          <template v-if="isActorViewing">
+                            <v-btn @click="requestRep()" small block color="primary">Request
+                            representation </v-btn>
+                            <v-alert transition="scale-transition" :value="requestSentAlert" type="success">
+                              Your request was sent!
+                              <v-btn flat color="white" @click.native="requestSentAlert = false">Close</v-btn>
+                            </v-alert>
+                            <v-alert transition="scale-transition" :value="doubleRequestAlert" type="error">
+                              You already requested this agent. This agent should reply soon :-).
+                              <v-btn flat color="white" @click.native="doubleRequestAlert = false">Close</v-btn>
+                            </v-alert>
+                          </template>
                         </v-flex>
                       </v-layout>
                       </template>
@@ -261,7 +273,7 @@
 </template>
 
 <script>
-import { isLoggedIn, isActor, isAgent, isDirector } from '@/components/authentication'
+import { getProfile, isLoggedIn, isActor, isAgent, isDirector } from '@/components/authentication'
 import Axios from 'axios'
 
 const CastingComplexAPI = `http://${window.location.hostname}:5050`
@@ -280,7 +292,7 @@ export default {
       pagination: {
         rowsPerPage: 12
       },
-      isSelfViewing: true,
+      isSelfViewing: false,
       isActorViewing: false,
       isAgentViewing: false,
       isDirectorViewing: false,
@@ -312,7 +324,9 @@ export default {
         website: '',
         agencyDivisions: [],
         from: '',
-        biography: ''
+        biography: '',
+        avatar: '',
+        id: ''
       },
       uploadedFiles: [],
       uploadError: null,
@@ -321,7 +335,10 @@ export default {
       uploadAlbumFieldName: 'album',
       viewPhotoIndex: 0,
       viewActorIndex: 0,
-      actors: []
+      actors: [],
+      viewerProfile: '',
+      doubleRequestAlert: false,
+      requestSentAlert: false
     }
   },
   beforeCreate () {
@@ -332,6 +349,7 @@ export default {
   mounted () {
     this.fetchAgent(this.$route.params.username)
     this.reset()
+    this.viewerProfile = getProfile()
   },
   computed: {
     isInitial () {
@@ -351,7 +369,6 @@ export default {
     showActor (actor, index) {
       this.actorDialog = true
       this.viewActorIndex = index
-      console.log('im gonna display ', actor)
     },
     close () {
       this.actorDialog = false
@@ -385,6 +402,7 @@ export default {
       Axios.get(`${CastingComplexAPI}/agents/?username=${username}`)
         .then((data) => {
           var profile = data.data.data
+          this.profile.agentId = profile.id
           this.profile.fullname = profile.firstName + ' ' + profile.lastName
           this.profile.from = profile.City + ', ' + profile.Country
           this.profile.biography = profile.profile
@@ -395,12 +413,45 @@ export default {
           this.profile.rosterTypes = profile.rosterTypes
           this.profile.website = profile.website
           this.profile.agencyDivisions = profile.agencyDivisions
+          this.profile.avatar = profile.user.avatar
           this.fetchAlbum()
-          this.getProfilePic()
           this.buildActorsProps(profile.actors)
+          this.defineViewer()
         }).catch((err) => {
           console.log(err)
         })
+    },
+    requestRep () {
+      var config = {
+        headers: {
+          'x-access-token': localStorage.getItem('session_token'),
+          'Content-Type': undefined
+        }
+      }
+
+      const url = `${CastingComplexAPI}/agents/${this.profile.agentId}/requests`
+      return Axios.post(url, {}, config)
+        .then(x => { this.requestSentAlert = true })
+        .catch(err => {
+          if (err.response.data.error) {
+            this.doubleRequestAlert = true
+          }
+        })
+    },
+    defineViewer () {
+      if (this.viewerProfile.user.id !== this.profile.userId) {
+        this.isSelfViewing = false
+
+        if (isActor) this.isActorViewing = true
+        if (isAgent) this.isAgentViewing = true
+        if (isDirector) this.isDirectorViewing = true
+      } else {
+        this.isSelfViewing = true
+      }
+      console.log('Is self viewing: ' + this.isSelfViewing)
+      console.log('Is actor viewing: ' + this.isActorViewing)
+      console.log('Is director viewing: ' + this.isDirectorViewing)
+      console.log('Is agent viewing: ' + this.isAgentViewing)
     },
     getCardMediaHeight () {
       var breakpoint = this.$vuetify.breakpoint.name

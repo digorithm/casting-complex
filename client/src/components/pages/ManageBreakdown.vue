@@ -58,17 +58,22 @@
                             <v-data-table
                               :headers="headers"
                               :search="search"
-                              :items="mockActorsAuditions"
+                              :items="auditions"
                               :no-data-text="noAuditions"
                             >
                                 <template slot="items" slot-scope="props">
-                                <td>{{ props.item.breakdown }}</td>
-                                <td>{{ props.item.actor }}</td>
+                                <td>{{ props.item.project }}</td>
+                                <td>{{ props.item.actorName }}</td>
                                 <td>{{ props.item.address }}</td>
-                                <td class="text-xs-left">{{ props.item.date }}</td>
+                                <td class="text-xs-left">{{ props.item.startsWhen }}</td>
                                 <td>
-                                <v-btn flat @click="editItem(props.item)">
+                                <v-btn flat @click="editAudition(props.index, props.item)">
                                   <v-icon color="primary" left>visibility</v-icon> Edit/View
+                                </v-btn>
+                                </td>
+                                <td>
+                                <v-btn icon @click="cancelAudition(props.index, props.item)">
+                                  <v-icon color="error">delete</v-icon>
                                 </v-btn>
                               </td>
                               </template>
@@ -83,7 +88,7 @@
                         <v-layout row wrap mt-3 justify-space-around>
                             <v-flex
                               align-center
-                              v-for="(actor, index) in auditionRequestsMock"
+                              v-for="(request, index) in auditionRequests"
                               :key="index"
                               my-3
                               mx-2
@@ -91,24 +96,25 @@
                               >
                               <v-layout column>
                                 <v-flex md12>
-                                  <h3> {{ actor.name }} </h3>
+                                  <h3> {{ request.Actor.firstName + ' ' + request.Actor.lastName}} </h3>
                                   <v-avatar size="120px">
-                                    <img class="actor-avatar" :src=actor.photo />
+                                    <img class="actor-avatar" :src=request.actorPhoto />
                                   </v-avatar>
-                                  <p>Role: {{ actor.role }}</p>
+                                  <p>Role: {{ request.roleName }}</p>
                                 </v-flex>
                                 <v-flex md12>
-                                  <v-btn block color="primary" small><v-icon left small>visibility</v-icon> view</v-btn>
+                                  <v-btn :to="{ name: 'Actor profile', params: { username: request.username }}" block color="primary" small><v-icon left small>visibility</v-icon> view</v-btn>
                                 </v-flex>
                                 <v-flex d-flex md12>
-                                  <v-flex md6>
-                                    <v-btn block color="success" small><v-icon left small>thumb_up</v-icon> accept</v-btn>
-                                  </v-flex>
-                                  <v-flex md6>
-                                    <v-btn block color="error" small><v-icon left small>thumb_down</v-icon> reject</v-btn>
-                                  </v-flex>
+                                    <v-btn @click="replyToRequest(index, request.roleId, request.id)" block color="primary" small><v-icon left small>reply</v-icon> Reply to request</v-btn>
                                 </v-flex>
                               </v-layout>
+                            </v-flex>
+                            <v-flex md12>
+                              <v-alert transition="scale-transition" :value="replySentAlert" type="success">
+                                Your reply was sent!
+                                <v-btn flat color="white" @click.native="replySentAlert = false">Close</v-btn>
+                              </v-alert>
                             </v-flex>
                         </v-layout>
                       </v-tab-item>
@@ -223,6 +229,182 @@
                             </v-card-actions>
                           </v-card>
                         </v-dialog>
+                        <v-dialog persistent v-model="replyRequestDialog" max-width="400px">
+                          <v-card>
+                            <v-card-title primary-title>
+                              <h1> Reply to request </h1>
+                            </v-card-title>
+                            <v-card-text>
+                              <template v-if="!accepting">
+                                <p><strong>Important!</strong></p>
+                                <p>Clicking on decline will immediately decline the request, make sure of your decision before clicking on it!</p>
+                                <p>By clicking on accept, you must also schedule an audition for this actor. But don't worry, this audition can be re-edited later.</p>
+                              </template>
+                              <template v-if="accepting">
+                                <p>Provide the necessary information to schedule the audition. You can re-edit it later.</p>
+                              </template>
+                              <v-divider></v-divider>
+                              <v-form ref="form" v-model="valid" lazy-validation>
+                                <v-layout mt-3 row wrap justify-center>
+                                  <v-flex md12>
+                                    <v-layout v-if="!accepting" row wrap>
+                                      <v-flex md6 class="text-xs-center">
+                                        <v-btn @click="accepting=true" color="primary" dark>Accept
+                                          <v-icon dark right>check_circle</v-icon>
+                                        </v-btn>
+                                      </v-flex>
+                                      <v-flex md6 class="text-xs-center">
+                                        <v-btn @click="answerAuditionRequest('reject')" color="red" dark>Decline
+                                          <v-icon dark right>block</v-icon>
+                                        </v-btn>
+                                      </v-flex>
+                                      </v-layout>
+                                      <template v-if="accepting">
+                                        <v-menu
+                                          ref="dateMenu"
+                                          :close-on-content-click="false"
+                                          v-model="dateMenu"
+                                          :nudge-right="40"
+                                          lazy
+                                          transition="scale-transition"
+                                          offset-y
+                                          full-width
+                                          min-width="290px"
+                                        >
+                                          <v-text-field
+                                            slot="activator"
+                                            v-model="auditionForm.startsWhenFormatted"
+                                            label="Date"
+                                            hint="MM/DD/YYYY format"
+                                            :rules="[v => !!v || 'Item is required']"
+                                            persistent-hint
+                                            @blur="auditionForm.startsWhen = parseDate(auditionForm.startsWhenFormatted)"
+                                          ></v-text-field>
+                                          <v-date-picker v-model="auditionForm.startsWhen" @input="dateMenu=false"></v-date-picker>
+                                        </v-menu>
+                                        <v-menu
+                                          ref="dateMenu2"
+                                          :close-on-content-click="false"
+                                          v-model="dateMenu2"
+                                          :nudge-right="40"
+                                          :return-value.sync="auditionForm.time"
+                                          lazy
+                                          transition="scale-transition"
+                                          offset-y
+                                          full-width
+                                          max-width="290px"
+                                          min-width="290px"
+                                        >
+                                          <v-text-field
+                                            slot="activator"
+                                            v-model="auditionForm.time"
+                                            label="Time"
+                                            readonly
+                                          ></v-text-field>
+                                          <v-time-picker v-model="auditionForm.time" @change="$refs.dateMenu2.save(auditionForm.time)"></v-time-picker>
+                                        </v-menu>
+                                        <v-text-field
+                                          v-model="auditionForm.address"
+                                          :rules="[v => !!v || 'Item is required']"
+                                          label="Audition location"
+                                          required
+                                        ></v-text-field>
+                                        <v-text-field
+                                          v-model="auditionForm.comments"
+                                          label="Comments"
+                                        ></v-text-field>
+                                      </template>
+                                  </v-flex>
+                                </v-layout>
+                              </v-form>
+                            </v-card-text>
+                            <v-card-actions>
+                              <v-btn @click="cancelReplyDialog()" flat color="error">
+                                cancel
+                              </v-btn>
+                              <v-btn v-if="accepting" @click="acceptAndSchedule()" flat color="primary">
+                                Accept and schedule
+                              </v-btn>
+                            </v-card-actions>
+                          </v-card>
+                        </v-dialog>
+                        <v-dialog persistent v-model="editAuditionDialog" max-width="400px">
+                          <v-card>
+                            <v-card-title primary-title>
+                              <h1> View/edit schedule </h1>
+                            </v-card-title>
+                            <v-card-text>
+                              <v-divider></v-divider>
+                              <v-form ref="form" v-model="valid" lazy-validation>
+                                <v-layout mt-3 row wrap justify-center>
+                                  <v-flex md12>
+                                        <v-menu
+                                          ref="dateMenuEditAudition"
+                                          :close-on-content-click="false"
+                                          v-model="dateMenuEditAudition"
+                                          :nudge-right="40"
+                                          lazy
+                                          transition="scale-transition"
+                                          offset-y
+                                          full-width
+                                          min-width="290px"
+                                        >
+                                          <v-text-field
+                                            slot="activator"
+                                            v-model="auditionForm.startsWhenFormatted"
+                                            label="Date"
+                                            hint="MM/DD/YYYY format"
+                                            :rules="[v => !!v || 'Item is required']"
+                                            persistent-hint
+                                            @blur="auditionForm.startsWhen = parseDate(auditionForm.startsWhenFormatted)"
+                                          ></v-text-field>
+                                          <v-date-picker v-model="auditionForm.startsWhen" @input="dateMenuEditAudition=false"></v-date-picker>
+                                        </v-menu>
+                                        <v-menu
+                                          ref="dateMenuEditAudition2"
+                                          :close-on-content-click="false"
+                                          v-model="dateMenuEditAudition2"
+                                          :nudge-right="40"
+                                          :return-value.sync="auditionForm.time"
+                                          lazy
+                                          transition="scale-transition"
+                                          offset-y
+                                          full-width
+                                          max-width="290px"
+                                          min-width="290px"
+                                        >
+                                          <v-text-field
+                                            slot="activator"
+                                            v-model="auditionForm.time"
+                                            label="Time"
+                                            readonly
+                                          ></v-text-field>
+                                          <v-time-picker v-model="auditionForm.time" @change="$refs.dateMenuEditAudition2.save(auditionForm.time)"></v-time-picker>
+                                        </v-menu>
+                                        <v-text-field
+                                          v-model="auditionForm.address"
+                                          :rules="[v => !!v || 'Item is required']"
+                                          label="Audition location"
+                                          required
+                                        ></v-text-field>
+                                        <v-text-field
+                                          v-model="auditionForm.comments"
+                                          label="Comments"
+                                        ></v-text-field>
+                                  </v-flex>
+                                </v-layout>
+                              </v-form>
+                            </v-card-text>
+                            <v-card-actions>
+                              <v-btn @click="cancelEditAudition()" flat color="error">
+                                cancel
+                              </v-btn>
+                              <v-btn  @click="updateAudition()" flat color="primary">
+                                Update audition
+                              </v-btn>
+                            </v-card-actions>
+                          </v-card>
+                        </v-dialog>
                       </v-tab-item>
                     </v-tabs>
                   </v-card-text>
@@ -245,6 +427,22 @@ const CastingComplexAPI = `http://${window.location.hostname}:5050`
 export default {
   data () {
     return {
+      dateMenuEditAudition2: '',
+      dateMenuEditAudition: '',
+      dateMenu: '',
+      dateMenu2: '',
+      auditionForm: {
+        address: '',
+        comments: '',
+        startsWhen: '',
+        endsWhen: '',
+        startsWhenFormatted: '',
+        endsWhenFormatted: '',
+        time: null,
+        id: ''
+      },
+      accepting: '',
+      replySentAlert: false,
       active: '',
       valid: '',
       search: '',
@@ -254,11 +452,11 @@ export default {
         text: 'Project',
         align: 'left',
         sortable: false,
-        value: 'breakdown'
+        value: 'project'
       },
-      { text: 'Actor', value: 'actor' },
+      { text: 'Actor', value: 'actorName' },
       { text: 'Address', value: 'address' },
-      { text: 'Date', value: 'date' }],
+      { text: 'Date', value: 'startsWhen' }],
       headers2: [{
         text: 'Name',
         value: 'name'
@@ -277,76 +475,45 @@ export default {
       addRoleDialog: '',
       isEditingRole: false,
       breakdownRoles: [],
-      mockActorsAuditions: [
-        {
-          breakdown: 'Cool project',
-          actor: 'Rodrigo',
-          address: '1988 stephens street',
-          date: 'Jun 8 2018, 3pm',
-          director: 'The director name'
-        },
-        {
-          breakdown: 'Another project',
-          actor: 'Seran',
-          address: '2033 random address',
-          date: 'Jun 9 2018, 3pm',
-          director: 'The director name'
-        },
-        {
-          breakdown: 'Yet another project',
-          actor: 'Jane',
-          address: '1866 random street',
-          date: 'Jun 10 2018, 3pm',
-          director: 'The director name'
-        }
-      ],
-      auditionRequestsMock: [
-        {
-          name: 'John',
-          username: 'jhon',
-          role: 'Role name',
-          photo: '/static/img/man1.jpg'
-        },
-        {
-          name: 'Jane',
-          username: 'jhon',
-          role: 'Role name',
-          photo: '/static/img/woman1.jpg'
-        },
-        {
-          name: 'Rodrigo',
-          username: 'jhon',
-          role: 'Role name',
-          photo: '/static/img/man2.jpg'
-        },
-        {
-          name: 'Guli',
-          username: 'jhon',
-          role: 'Role name',
-          photo: '/static/img/woman2.jpg'
-        },
-        {
-          name: 'Ed',
-          username: 'jhon',
-          role: 'Role name',
-          photo: '/static/img/man3.jpg'
-        },
-        {
-          name: 'Jess',
-          username: 'jhon',
-          role: 'Role name',
-          photo: '/static/img/woman3.jpg'
-        }
-      ],
+      auditions: [],
+      auditionRequests: [],
       form: {
         name: '',
         description: '',
         ageRange: ''
       },
-      roleBeingEdited: ''
+      roleBeingEdited: '',
+      replyingRequest: {
+        roleId: '',
+        reqId: '',
+        idx: ''
+      },
+      replyRequestDialog: false,
+      editAuditionDialog: false,
+      auditionBeingEdited: ''
+    }
+  },
+  watch: {
+    'auditionForm.startsWhen': function (val) {
+      this.auditionForm.startsWhenFormatted = this.formatDate(this.auditionForm.startsWhen)
+    },
+    'auditionForm.endsWhen': function (val) {
+      this.auditionForm.endsWhenFormatted = this.formatDate(this.auditionForm.endsWhen)
     }
   },
   methods: {
+    formatDate (date) {
+      if (!date) return null
+
+      const [year, month, day] = date.split('-')
+      return `${month}/${day}/${year}`
+    },
+    parseDate (date) {
+      if (!date) return null
+
+      const [month, day, year] = date.split('/')
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+    },
     deleteRole (index, role) {
       var config = {
         headers: {
@@ -446,7 +613,6 @@ export default {
           'Content-Type': undefined
         }
       }
-      console.log(JSON.stringify(this.form))
       Axios.post(`${CastingComplexAPI}/breakdowns/${this.breakdown.id}/roles`, this.form, config).then(res => {
         this.$refs.form.reset()
         this.publishedAlert = true
@@ -467,6 +633,221 @@ export default {
         .catch(function (error) {
           return Promise.reject(error.response.data)
         })
+    },
+    fetchActorProfilePic (actorId, idx) {
+      Axios.get(`${CastingComplexAPI}/users/${actorId}/photos/profile`)
+        .then((data) => {
+          var src = 'data:image/jpeg;base64,' + data.data.avatar
+          this.auditionRequests[idx].actorPhoto = src
+        }).catch((err) => {
+          console.log(err)
+        })
+    },
+    fetchAuditionRequest (breakdownId) {
+      var config = {
+        headers: {
+          'x-access-token': localStorage.getItem('session_token'),
+          'Content-Type': undefined
+        }
+      }
+
+      Axios.get(`${CastingComplexAPI}/breakdowns/${breakdownId}/requests`, config).then(response => {
+        var tempRequests = response.data
+
+        this.auditionRequests = tempRequests.filter(r => r.isScheduled === false)
+        for (var [idx, request] of this.auditionRequests.entries()) {
+          this.fetchActorProfilePic(request.Actor.id, idx)
+        }
+      })
+        .catch(function (error) {
+          console.log(error)
+        })
+    },
+    answerAuditionRequest (answer) {
+      var roleId = this.replyingRequest.roleId
+      var reqId = this.replyingRequest.reqId
+
+      var config = {
+        headers: {
+          'x-access-token': localStorage.getItem('session_token'),
+          'Content-Type': undefined
+        }
+      }
+
+      var url = `${CastingComplexAPI}/breakdowns/${this.$route.params.breakdown_id}/roles/${roleId}/requests/${reqId}/answer`
+
+      var data = {accepts: answer === 'accept'}
+
+      Axios.post(url, data, config).then(res => {
+        if (!data.accepts) this.auditionRequests.splice(this.replyingRequest.idx, 1)
+        this.closeReplyDialog(data.accepts)
+      })
+        .catch(error => {
+          console.log(error.response)
+        })
+    },
+    scheduleAudition (form) {
+      var config = {
+        headers: {
+          'x-access-token': localStorage.getItem('session_token'),
+          'Content-Type': undefined
+        }
+      }
+
+      var url = `${CastingComplexAPI}/breakdowns/${this.$route.params.breakdown_id}/auditions`
+
+      Axios.post(url, form, config).then(res => {
+        this.auditions.push(res.data.data)
+      })
+        .catch(error => {
+          console.log(error.response)
+        })
+    },
+    replyToRequest (index, roleId, reqId) {
+      this.replyingRequest.roleId = roleId
+      this.replyingRequest.reqId = reqId
+      this.replyingRequest.idx = index
+      this.replyRequestDialog = true
+    },
+    closeReplyDialog (wasAccepted) {
+      // Reset everything just in case
+      this.auditionForm.comments = ''
+      this.auditionForm.address = ''
+      this.auditionForm.startsWhen = ''
+      this.auditionForm.startsWhenFormatted = ''
+      this.auditionForm.time = null
+      this.auditionForm.id = ''
+      this.replyingRequest.roleId = ''
+      this.replyingRequest.reqId = ''
+      this.replyingRequest.idx = ''
+      this.replyRequestDialog = false
+      this.replySentAlert = true
+      this.accepting = false
+    },
+    convertTime12to24 (time12h) {
+      const [time, modifier] = time12h.trim().split(' ')
+
+      let [hours, minutes] = time.split(':')
+
+      if (hours === '12') {
+        hours = '00'
+      }
+
+      if (modifier === 'pm') {
+        hours = parseInt(hours, 10) + 12
+      }
+
+      return hours + ':' + minutes
+    },
+    cancelReplyDialog () {
+      this.replyingRequest.roleId = ''
+      this.replyingRequest.reqId = ''
+      this.replyRequestDialog = false
+      this.accepting = false
+    },
+    cancelAudition (index, audition) {
+      if (!confirm('Are you sure you want to cancel this audition?')) return
+
+      var config = {
+        headers: {
+          'x-access-token': localStorage.getItem('session_token'),
+          'Content-Type': undefined
+        }
+      }
+
+      var breakdownId = this.$route.params.breakdown_id
+
+      var url = `${CastingComplexAPI}/breakdowns/${breakdownId}/auditions/${audition.id}`
+
+      Axios.delete(url, config).then(response => {
+        this.auditions.splice(index, 1)
+      })
+        .catch(err => {
+          console.log(err)
+        })
+    },
+    updateAudition () {
+      var config = {
+        headers: {
+          'x-access-token': localStorage.getItem('session_token'),
+          'Content-Type': undefined
+        }
+      }
+
+      var finalForm = {}
+      finalForm.comments = this.auditionForm.comments
+      finalForm.address = this.auditionForm.address
+
+      // -07:00 is for the local America/Vancouver time. Bugs might arise from this...
+      finalForm.endsWhen = this.auditionForm.startsWhen + 'T' + this.auditionForm.time + '-07:00'
+      finalForm.startsWhen = this.auditionForm.startsWhen + 'T' + this.auditionForm.time + '-07:00'
+
+      var breakdownId = this.$route.params.breakdown_id
+
+      var url = `${CastingComplexAPI}/breakdowns/${breakdownId}/auditions/${this.auditionForm.id}`
+
+      // send this final form to the put endpoint
+      Axios.put(url, finalForm, config).then(response => {
+        this.auditions.splice(this.auditionBeingEdited, 1, response.data.data)
+        this.cancelEditAudition()
+      })
+        .catch(err => {
+          console.log(err)
+        })
+      // get the returning new audition, update the audition list
+    },
+    async cancelEditAudition () {
+      this.editAuditionDialog = false
+      await this.sleep(1000)
+      this.auditionForm.comments = ''
+      this.auditionForm.address = ''
+      this.auditionForm.startsWhen = ''
+      this.auditionForm.startsWhenFormatted = ''
+      this.auditionForm.time = null
+      this.auditionForm.id = ''
+      this.auditionBeingEdited = ''
+    },
+    editAudition (index, audition) {
+      this.auditionForm.address = audition.address
+      this.auditionForm.comments = audition.comments
+
+      var dateAndTime = audition.startsWhen.split(',')
+
+      dateAndTime[0] = dateAndTime[0].replace('th', '')
+      dateAndTime[0] = dateAndTime[0].replace('st', '')
+      dateAndTime[0] = dateAndTime[0].replace('nd', '')
+      dateAndTime[0] = dateAndTime[0].replace('rd', '')
+
+      // Weird trick
+      this.auditionForm.startsWhen = new Date(Date.parse(dateAndTime[0])).toISOString().split('T')[0]
+
+      this.auditionForm.time = this.convertTime12to24(dateAndTime[1])
+      this.auditionForm.id = audition.id
+
+      this.editAuditionDialog = true
+      this.auditionBeingEdited = index
+    },
+    acceptAndSchedule () {
+      var finalForm = {}
+      finalForm.comments = this.auditionForm.comments
+      finalForm.address = this.auditionForm.address
+
+      // -07:00 is for the local America/Vancouver time. Bugs might arise from this...
+      finalForm.endsWhen = this.auditionForm.startsWhen + 'T' + this.auditionForm.time + '-07:00'
+      finalForm.startsWhen = this.auditionForm.startsWhen + 'T' + this.auditionForm.time + '-07:00'
+      finalForm.auditionRequestId = this.replyingRequest.reqId
+
+      this.answerAuditionRequest('accept')
+      this.scheduleAudition(finalForm)
+      this.auditionRequests.splice(this.replyingRequest.idx, 1)
+    },
+    fetchAuditions (breakdownId) {
+      Axios.get(`${CastingComplexAPI}/breakdowns/${breakdownId}/auditions`).then(response => {
+        this.auditions = response.data.data
+      })
+        .catch(function (error) {
+          console.log(error)
+        })
     }
   },
   beforeMount () {
@@ -486,6 +867,8 @@ export default {
       }
       this.breakdown = breakdown
       this.fetchBreakdownRoles(breakdown.id)
+      this.fetchAuditionRequest(breakdown.id)
+      this.fetchAuditions(breakdown.id)
     }).catch(e => {
       return this.$router.push('*')
     })
