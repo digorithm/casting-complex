@@ -3,6 +3,8 @@
 var bcrypt = require('bcryptjs');
 var utils  = require('../utils')
 var jwt = require('jsonwebtoken');
+var fs = require('fs')
+const path = require('path');
 var env       = process.env.NODE_ENV || 'development';
 var config    = require(__dirname + '/../config/config.js')[env];
 
@@ -43,8 +45,40 @@ module.exports = (sequelize, DataTypes) => {
       }
     },
     instanceMethods: {
+      getProfilePic: function () {
+
+        var prefix = 'data:image/jpeg;base64,'
+
+        var rootFolder = path.resolve(__dirname, '../')
+        var avatarPath = 'storage/' + this.id
+    
+        var defaultImage = rootFolder + '/' + 'user.png'
+        var defaultImageFile = fs.readFileSync(defaultImage)
+    
+        if (!fs.existsSync(avatarPath)) {
+          // no avatar set
+          // send generic image
+          return prefix + defaultImageFile.toString('base64')
+        }
+        
+        var avatarFolder = rootFolder + '/'+  avatarPath
+    
+        var dir = fs.readdirSync(avatarFolder)
+    
+        // Find the file called avatar or return default image if it isn't found
+        for (file of dir) {
+          if (file.split('.')[0] === 'avatar') {
+            var filePath = avatarFolder + '/' + file
+            var file = fs.readFileSync(filePath)
+            return prefix + file.toString('base64')
+          }
+        }
+        return prefix + defaultImageFile.toString('base64')
+      },
       buildResponse: async function () {
         var userJson = this.toJSON();
+        var userProfilePic = this.getProfilePic()
+        userJson.avatar = userProfilePic
         RemoveFields(userJson, ["updatedAt", "createdAt", "password"]);
         return userJson
       },

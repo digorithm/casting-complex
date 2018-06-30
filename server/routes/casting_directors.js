@@ -192,7 +192,7 @@ router.get('/:casting_director_id/credits', async function(req, res) {
 })
 
 router.get('/:casting_director_id/auditions', VerifyToken, async function(req, res) {
-  console.log("Am I even here?")
+
   if (req.params.casting_director_id != req.userId) {
     return ReE(res, {error: "Bad request"}, 404) 
   }
@@ -214,16 +214,27 @@ router.get('/:casting_director_id/auditions', VerifyToken, async function(req, r
           where: {breakdownId: breakdown.id}
         }
       );
-      // Get audition's actor name and transform to JSON
-      var auditionsJson = auditions.map(async function (a) { 
-        var j = a.toJSON();
-        var actor = await models.Actor.findById(a.ActorId)
-        j.actor = actor.firstName
-        return j
-      });
 
-      allAuditions.push(auditionsJson)
+      if (auditions.length > 0) {
+        // Get audition's actor name and transform to JSON
+        var auditionsJson = auditions.map(a => a.toJSON())
+
+        for (var [idx, audition] of auditions.entries()) {
+
+          var actor = await models.Actor.findById(audition.ActorId)
+          var actorName = actor.firstName + ' ' + actor.lastName
+          var breakdown = await audition.getBreakdown()
+    
+          auditionsJson[idx].actorName = actorName
+          auditionsJson[idx].project = breakdown.name
+        }
+
+        allAuditions.push(auditionsJson)
+      }
     }
+    // flatten it
+    allAuditions = allAuditions.reduce((acc, val) => acc.concat(val), [])
+
     return ReS(res, allAuditions, 200)
   } catch (e) {
     console.log(e)

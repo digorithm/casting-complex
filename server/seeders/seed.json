@@ -339,6 +339,17 @@
         "name":"Rejected"
      }
   ],
+  "RepRequestStatuses":[
+     {
+        "name":"Pending"
+     },
+     {
+        "name":"Approved"
+     },
+     {
+        "name":"Rejected"
+     }
+  ],
   "Languages":[
      {
         "name":"English"

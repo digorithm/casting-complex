@@ -233,6 +233,114 @@ router.get('/:agent_id/references', async function(req, res) {
   
 })
 
+router.post('/:agent_id/requests', VerifyToken, async function(req, res) {
+
+  // Actor id is in the req header because who calls this is the actor
+  var actor = await models.Actor.findById(req.userId);
+  if (actor == null) return ReE(res, {error: "Actor not found"}, 404)
+
+  var agent = await models.Agent.findById(req.params.agent_id);
+  if (agent == null) return ReE(res, {error: "Agent not found"}, 404)
+
+  var reqs = await agent.getRepRequests()
+  // check if req exists
+  for (var req of reqs) {
+    if (req.ActorId === actor.id && req.statusId === 1) {
+      return ReE(res, "Double request", 400)
+    }
+  }
+  try {
+    var request = { statusId: 1, ActorId: actor.id, AgentId: agent.id }
+
+    var createdRequest = await models.RepRequest.create(request)
+
+    return ReS(res, "Request sent", 200)
+
+  } catch (e) {
+    return ReE(res, {error: e}, 500)
+  }
+})
+
+router.get('/:agent_id/requests', VerifyToken, async function(req, res) {
+  
+  if (req.params.agent_id != req.userId) {
+    return ReE(res, {error: "Bad request"}, 404) 
+  }
+
+  try {
+    var agent = await models.Agent.findById(req.userId);
+    if (agent == null) return ReE(res, {error: "Agent not found"}, 404)
+
+    var reqs = await agent.getRepRequests()
+
+    // Get only pending requests
+    var filteredReqs = reqs.filter(r => r.statusId === 1)
+    
+    if (filteredReqs.length > 0) {
+      var reqsJson = filteredReqs.map(r => r.toJSON())
+
+      for (var [idx, req] of filteredReqs.entries()) {
+        var actor = await models.Actor.findById(req.ActorId)
+        var actorResponse = await actor.buildResponse()
+        var actorInfo = {}
+        actorInfo.actorName = actorResponse.firstName + ' ' + actorResponse.lastName
+        actorInfo.username = actorResponse.user.username
+        actorInfo.avatar = actorResponse.user.avatar
+        reqsJson[idx].actor = actorInfo
+      }
+
+      return ReS(res, reqsJson, 200)
+    }
+    return ReS(res, [], 200)
+  } catch (e) {
+    return ReE(res, {error: e}, 500)
+  }
+})
+
+router.post('/:agent_id/requests/:req_id/reply', VerifyToken, async function(req, res) {
+
+  var repRequest = await models.RepRequest.findById(req.params.req_id)
+  if (req === null) return ReE(res, {error: "Request not found"}, 404)
+
+  var actor = await models.Actor.findById(repRequest.ActorId)
+
+  if (actor.isRepresented) {
+    await repRequest.destroy()
+    return ReE(res, {error: "Actor is repped"}, 400)
+  }
+
+  var agent = await models.Agent.findById(req.userId);
+  if (agent == null) return ReE(res, {error: "Agent not found"}, 404)
+  
+  // Agents are calling this
+  if (repRequest.AgentId !== req.userId) {
+    return ReE(res, {error: "Bad request"}, 400)
+  }
+
+  // TODO: check if actor is already repped, if so, return error message and delete request
+  
+  try {
+    var accepts = req.body.accepts
+
+    console.log(accepts)
+    if (accepts) {
+      await agent.addActor(repRequest.ActorId);
+      await models.Actor.update(
+        { isRepresented: true },
+        { where: { id: repRequest.ActorId }}
+      );
+      await repRequest.update({statusId: 2})
+    } else {
+      await repRequest.update({statusId: 3})
+    }
+    
+    return ReS(res, "All good", 200)
+
+  } catch (e) {
+    return ReE(res, {error: e}, 500)
+  }
+})
+
 router.get('/:agent_id/auditions', VerifyToken, async function(req, res) {
   
   if (req.params.agent_id != req.userId) {
@@ -252,13 +360,26 @@ router.get('/:agent_id/auditions', VerifyToken, async function(req, res) {
           where: {ActorId: actor.id}
         }
       );
-      var auditionsJson = auditions.map(a => { 
-        var j = a.toJSON();
-        j.actor = actor.firstName
-        return j
-      });
-      allAuditions.push(auditionsJson)
+      
+      if (auditions.length > 0) {
+        var auditionsJson = auditions.map(a => a.toJSON())
+        
+        for (var [idx, audition] of auditions.entries()) {
+
+          var actor = await models.Actor.findById(audition.ActorId)
+          var actorName = actor.firstName + ' ' + actor.lastName
+          var breakdown = await audition.getBreakdown()
+    
+          auditionsJson[idx].actorName = actorName
+          auditionsJson[idx].project = breakdown.name
+        }
+
+        allAuditions.push(auditionsJson)
+      }
     }
+    // flatten it
+    allAuditions = allAuditions.reduce((acc, val) => acc.concat(val), [])
+
     return ReS(res, allAuditions, 200)
   } catch (e) {
     console.log(e)

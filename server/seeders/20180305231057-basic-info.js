@@ -33,6 +33,8 @@ module.exports = {
 
     await queryInterface.bulkInsert('AuditionStatuses', seeds["AuditionStatuses"])
 
+    await queryInterface.bulkInsert('RepRequestStatuses', seeds["RepRequestStatuses"])
+
     await queryInterface.bulkInsert('AuditionRequestStatuses', seeds["AuditionRequestStatuses"])
 
     await queryInterface.bulkInsert('Languages', seeds["Languages"])

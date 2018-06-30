@@ -198,7 +198,7 @@ router.get('/:user_id/photos/profile', async function(req, res) {
     var rootFolder = path.resolve(__dirname, '../')
     var avatarPath = 'storage/' + req.params.user_id
 
-    defaultImage = rootFolder + '/' + 'user.png'
+    var defaultImage = rootFolder + '/' + 'user.png'
     var defaultImageFile = fs.readFileSync(defaultImage)
 
     if (!fs.existsSync(avatarPath)) {

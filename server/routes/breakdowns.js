@@ -15,8 +15,42 @@ var HandleSequelizeError = utils.HandleSequelizeError;
 
 router.get('/', async function(req, res) {
 
+
+  if (req.query.searchQuery) {
+    var searchQuery = JSON.parse(req.query.searchQuery)
+  }
+
   try {
-    var breakdowns = await models.Breakdown.findAll();
+    if (searchQuery) {
+      var query = {
+        where: {}
+      }
+
+      if (searchQuery.mediaType.length > 0) {
+        query.where.mediaTypeId = { $in: searchQuery.mediaType }
+      }
+
+      var requiresUnion = []
+      if (searchQuery.requiresUnion === '1') {
+        requiresUnion = [true]
+      } else if (searchQuery.requiresUnion === '2') {
+        requiresUnion = [false]
+      } else {
+        requiresUnion = [true, false]
+      }
+
+      if (searchQuery.searchString.length >0) {
+        query.where.name = { $iLike: '%' + searchQuery.searchString + '%'}
+      }
+
+      query.where.requiresUnion = {$in: requiresUnion}
+
+      console.log(JSON.stringify(query))
+
+      var breakdowns = await models.Breakdown.findAll(query)
+    } else {
+      var breakdowns = await models.Breakdown.findAll();
+    }
     var breakdownJsons = breakdowns.map(b => b.toJSON())
 
     for (var [idx, breakdown] of breakdowns.entries()) {
@@ -43,11 +77,19 @@ router.get('/:breakdown_id', async function(req, res) {
 
     if (!breakdown) return ReE(res, {message: "not found"}, 404)
 
+    breakdownJson = breakdown.toJSON()
+    var mediaType = await breakdown.getMediaType()
+    breakdownJson.mediaType = mediaType.name
+
+    var director = await models.CastingDirector.findById(breakdown.CastingDirectorId)
+    var fullName = director.firstName + ' ' + director.lastName
+    breakdownJson.directorName = fullName
+
   } catch (e) {
     return ReE(res, {error: e}, 500)
   }  
 
-  return ReS(res, {data: breakdown.toJSON()}, 200)
+  return ReS(res, {data: breakdownJson}, 200)
 
 });
 
@@ -319,6 +361,21 @@ router.post('/:breakdown_id/roles/:role_id/requests', VerifyToken, async functio
   if (req.body.ActorId != actorFromUser.id) return ReE(res, {error: "Bad request"}, 400)
 
   try {
+
+    // Check if actor already requested that role
+
+    var requests = await models.AuditionRequest.findAll(
+      { 
+        where: { $and: [
+          {ActorId: actorFromUser.id},
+          {roleId: req.params.role_id},
+          {BreakdownId: req.params.breakdown_id},
+          {statusId: 1}] }
+      })
+
+    if (requests.length > 0) {
+      return ReE(res, "Duplicated request", 400)
+    }
     
     var breakdownAuditionRequest = await breakdown.createAuditionRequest({
       ActorId: actorFromUser.id,
@@ -365,6 +422,58 @@ router.get('/:breakdown_id/roles/:role_id/requests', VerifyToken, async function
   }
 
   return ReS(res, {data: auditionRequestsJson}, 200)
+});
+
+// I know it makes no sense
+router.get('/:breakdown_id/requests', VerifyToken, async function(req, res) {
+ 
+  try {
+    var breakdown = await models.Breakdown.findById(req.params.breakdown_id);
+    
+    var directorFromUser = await models.CastingDirector.findOne({
+      where: {userId: req.baseId}
+    });
+
+    if (directorFromUser == null) return ReE(res, {error: "No director found"}, 404);
+
+    if (breakdown.CastingDirectorId != directorFromUser.id) return ReE(res, {error: "You don't own this breakdown"}, 403)
+
+  } catch (e) {
+    return ReE(res, {error: e}, 400)
+  }
+
+  try {
+
+    var auditionRequests = await models.AuditionRequest.findAll({
+      where: {
+        BreakdownId: req.params.breakdown_id
+      },
+      include: [models.Actor, models.Breakdown]
+    })
+
+    // We care about pending requests only
+    var auditionRequests = auditionRequests.filter(r => r.statusId === 1)
+    
+    var auditionRequestsJson = auditionRequests.map(a => a.toJSON());
+
+    for (var [idx, request] of auditionRequests.entries()) {
+      
+      var roles = await request.Breakdown.getRole()
+
+      var user = await request.Actor.getUser()
+      
+      for (var role of roles) {
+        if (request.roleId === role.id) {
+          auditionRequestsJson[idx].roleName = role.name
+          auditionRequestsJson[idx].username = user.username
+        }
+      }
+    }
+  } catch(e) {
+    return ReE(res, {error: e}, 500)
+  }
+
+  return ReS(res, auditionRequestsJson, 200)
 });
 
 router.post('/:breakdown_id/roles/:role_id/requests/:req_id/answer', VerifyToken, async function(req, res) {
@@ -453,6 +562,8 @@ router.post('/:breakdown_id/auditions', VerifyToken, async function(req, res) {
   try {
 
     var auditionRequest = await models.AuditionRequest.findById(req.body.auditionRequestId)
+
+    console.log(req.body)
     
     var breakdownAudition = await models.Audition.create({
       address: req.body.address,
@@ -463,6 +574,15 @@ router.post('/:breakdown_id/auditions', VerifyToken, async function(req, res) {
       statusId: 1,
       ActorId: auditionRequest.ActorId
     });
+
+    var auditionJson = breakdownAudition.toJSON()
+
+    var actor = await models.Actor.findById(breakdownAudition.ActorId)
+    var actorName = actor.firstName + ' ' + actor.lastName
+    var breakdown = await breakdownAudition.getBreakdown()
+
+    auditionJson.actorName = actorName
+    auditionJson.project = breakdown.name
 
     var message = await models.Message.create({
       subject: "Audition scheduled",
@@ -478,7 +598,7 @@ router.post('/:breakdown_id/auditions', VerifyToken, async function(req, res) {
     return ReE(res, {error: e}, 500)
   }
 
-  return ReS(res, {data: breakdownAudition.toJSON()}, 201)
+  return ReS(res, {data: auditionJson}, 201)
 });
 
 router.get('/:breakdown_id/auditions', async function(req, res) {
@@ -497,7 +617,18 @@ router.get('/:breakdown_id/auditions', async function(req, res) {
         where: {breakdownId: breakdown.id}
       }
     );
+
     var auditionsJson = auditions.map(a => a.toJSON());
+
+    for (var [idx, audition] of auditions.entries()) {
+
+      var actor = await models.Actor.findById(audition.ActorId)
+      var actorName = actor.firstName + ' ' + actor.lastName
+      var breakdown = await audition.getBreakdown()
+
+      auditionsJson[idx].actorName = actorName
+      auditionsJson[idx].project = breakdown.name
+    }
     
   } catch(e) {
     return ReE(res, {error: e}, 500)
@@ -560,11 +691,46 @@ router.put('/:breakdown_id/auditions/:audition_id', VerifyToken, async function(
 
     await audition.update(req.body);
     
+    var auditionJson = audition.toJSON()
+
+    var actor = await models.Actor.findById(audition.ActorId)
+    var actorName = actor.firstName + ' ' + actor.lastName
+    var breakdown = await audition.getBreakdown()
+
+    auditionJson.actorName = actorName
+    auditionJson.project = breakdown.name
+    
   } catch(e) {
     return ReE(res, {error: e}, 500)
   }
 
-  return ReS(res, {data: audition.toJSON()}, 200)
+  return ReS(res, {data: auditionJson}, 200)
+});
+
+router.delete('/:breakdown_id/auditions/:audition_id', VerifyToken, async function(req, res) {
+ 
+  try {
+    var breakdown = await models.Breakdown.findById(req.params.breakdown_id);
+  } catch (e) {
+    return ReE(res, {error: e}, 400)
+  }
+
+  try {
+    var audition = await models.Audition.findOne(
+      {
+        where: {
+          breakdownId: breakdown.id,
+          id: req.params.audition_id
+        }
+      }
+    );
+    await audition.destroy()
+    
+  } catch(e) {
+    return ReE(res, {error: e}, 500)
+  }
+
+  return ReS(res, {message: "Audition deleted"}, 200)
 });
 
 module.exports = router;

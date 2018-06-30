@@ -57,6 +57,8 @@ module.exports = (sequelize, DataTypes) => {
           foreignKey: "agentId",
           timestamps: false
         });
+
+        Agent.hasMany(models.RepRequest);
       }
     },
     instanceMethods: {
@@ -70,7 +72,7 @@ module.exports = (sequelize, DataTypes) => {
         var agentRosterTypes = await this.getRosterTypes();
 
         var agentJson = this.toJSON();
-        agentJson.user = agentUser.toJSON();
+        agentJson.user = await agentUser.buildResponse();
 
         agentJson.rosterTypeId = agentRosterTypes.map(r => r.id);
         agentJson.rosterTypes = agentRosterTypes.map(r => r.name)

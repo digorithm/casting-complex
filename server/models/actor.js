@@ -22,6 +22,7 @@ module.exports = (sequelize, DataTypes) => {
     isRepresented: DataTypes.BOOLEAN,
     height: DataTypes.FLOAT,
     weight: DataTypes.FLOAT,
+    age: DataTypes.INTEGER,
     birthdate: {
       type: DataTypes.DATEONLY,
       get: function() {
@@ -99,6 +100,8 @@ module.exports = (sequelize, DataTypes) => {
         Actor.hasMany(models.Audition);
 
         Actor.hasMany(models.Experience);
+
+        Actor.hasOne(models.RepRequest);
       }
     },
     instanceMethods: {
@@ -142,6 +145,19 @@ module.exports = (sequelize, DataTypes) => {
 
         actorJson.unionId = actorUnions.map(u => u.id);
         actorJson.Unions = actorUnions.map(u => u.name);
+
+
+        if (this.isRepresented) {
+          var agent = await this.getAgents()
+          var agentUser = await agent[0].getUser();
+
+          var agentInfo = {
+            name: agent[0].firstName + ' ' + agent[0].lastName,
+            username: agentUser.username,
+            agencyName: agent[0].agencyName
+          }
+          actorJson.agent = agentInfo
+        }
 
         var modelsToQuery = ["Country", "City", "Ethnicity", "Eye", "Hair", "Gender"]
 
@@ -231,6 +247,5 @@ module.exports = (sequelize, DataTypes) => {
       }
     }
   });
-
   return Actor;
 };

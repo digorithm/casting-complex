@@ -14,8 +14,12 @@ router.get('/', async function(req, res) {
 
   var username = req.query.username;
   
+  if (req.query.searchQuery) {
+    var searchQuery = JSON.parse(req.query.searchQuery)
+  }
+  
   //Query all actors
-  if (username === undefined) {
+  if (username === undefined && searchQuery === undefined) {
     var actors = await models.Actor.findAll()
 
     actorJsonPromises = [];
@@ -27,8 +31,10 @@ router.get('/', async function(req, res) {
     Promise.all(actorJsonPromises).then(actorsJson => {
       return ReS(res, {data: actorsJson}, 200);
     });
-  } else {
-    // Query by username
+  }
+
+  // Query by username
+  if (username && searchQuery === undefined) {
     var user = await models.User.findOne({
       where: { username: username }
     })
@@ -38,6 +44,124 @@ router.get('/', async function(req, res) {
     var actorJson = await actor.buildResponse();
 
     return ReS(res, {data: actorJson}, 200)
+  }
+  
+  // Query by full search query
+  if (searchQuery && username === undefined) {
+
+    console.log(searchQuery)
+
+    var query = {
+      where: {}
+    }
+
+    if (searchQuery.actorName) {
+      query.where.$or = [
+        { firstName: { $iLike: '%' + searchQuery.actorName + '%'} },
+        { middleName: { $iLike: '%' + searchQuery.actorName + '%'} },
+        { lastName: { $iLike: '%' + searchQuery.actorName + '%'} },
+      ]
+    }
+
+    if (searchQuery.genderId.length > 0) {
+      query.where.genderId = { $in: searchQuery.genderId }
+    }
+
+    if (searchQuery.ethnicityId.length > 0) {
+      query.where.ethnicityId = { $in: searchQuery.ethnicityId }
+    }
+
+    if (searchQuery.hairId.length > 0) {
+      query.where.hairId = { $in: searchQuery.hairId }
+    }
+
+    if (searchQuery.eyeId.length > 0) {
+      query.where.eyeId = { $in: searchQuery.eyeId }
+    }
+
+    if (searchQuery.isRepped) {
+      var isRepped = []
+      if (searchQuery.isRepped === '1') {
+        isRepped = [true]
+      } else if (searchQuery.isRepped === '2') {
+        isRepped = [false]
+      } else {
+        isRepped = [true, false]
+      }
+      query.where.isRepresented = {$in: isRepped}
+    }
+    
+    if (searchQuery.minHeight || searchQuery.maxHeight){
+      query.where.height = {}
+    }
+    if (searchQuery.minHeight) {
+      query.where.height.$gte = searchQuery.minHeight
+    }
+    
+    if (searchQuery.maxHeight) {
+      query.where.height.$lte = searchQuery.maxHeight 
+    }
+
+    if (searchQuery.minWeight || searchQuery.maxWeight){
+      query.where.weight = {}
+    }
+    if (searchQuery.minWeight) {
+      query.where.weight.$gte = searchQuery.minWeight
+    }
+    
+    if (searchQuery.maxWeight) {
+      query.where.weight.$lte = searchQuery.maxWeight
+    }
+
+    if (searchQuery.minAge || searchQuery.maxAge){
+      query.where.age = {}
+    }
+    if (searchQuery.minAge) {
+      query.where.age.$gte = searchQuery.minAge
+    }
+    
+    if (searchQuery.maxAge) {
+      query.where.age.$lte = searchQuery.maxAge
+    }
+
+    if (searchQuery.creditId.length > 0 || searchQuery.skills.length > 0) {
+      query.include = []
+    }
+    if (searchQuery.creditId.length > 0) {
+      var creditModel = { 
+        model: models.Credit,
+        where: { 
+          id: { 
+            $in: searchQuery.creditId
+          }
+        }
+      }
+      query.include.push(creditModel)
+    }
+
+    if (searchQuery.skills.length > 0) {
+      var skillModel = { 
+        model: models.Skill,
+        where: { 
+          id: { 
+            $in: searchQuery.skills
+          }
+        }
+      }
+      query.include.push(skillModel)
+    }
+
+    var actors = await models.Actor.findAll(query)
+
+    actorJsonPromises = [];
+    for (actor of actors) {
+      actorJsonPromise = actor.buildResponse();
+      actorJsonPromises.push(actorJsonPromise);
+    }
+
+    Promise.all(actorJsonPromises).then(actorsJson => {
+      return ReS(res, {data: actorsJson}, 200);
+    });
   }
 });
 
@@ -111,6 +235,25 @@ router.put('/', VerifyToken, async function(req, res, next) {
       await actor.setLanguages(req.body.languageId);
     }
   }
+
+  // Calculate age
+  try {
+    var age = ''
+    var birthday = new Date(req.body.birthdate)
+    var ageDifMs = Date.now() - birthday.getTime()
+    var ageDate = new Date(ageDifMs)
+    if (isNaN(Math.abs(ageDate.getUTCFullYear() - 1970))) {
+      age = ''
+    } else {
+      age = Math.abs(ageDate.getUTCFullYear() - 1970)
+    }
+
+    req.body.age = age
+  } catch (e) {
+    console.log(e)
+    req.body.age = ''
+  }
+  
 
   try {
     var updatedActor = await actor.update(req.body);
@@ -346,6 +489,16 @@ router.get('/:actor_id/auditions', VerifyToken, async function(req, res) {
       }
     );
     var auditionsJson = auditions.map(a => a.toJSON());
+
+    for (var [idx, audition] of auditions.entries()) {
+
+      var actor = await models.Actor.findById(audition.ActorId)
+      var actorName = actor.firstName + ' ' + actor.lastName
+      var breakdown = await audition.getBreakdown()
+
+      auditionsJson[idx].actorName = actorName
+      auditionsJson[idx].project = breakdown.name
+    }
     
     return ReS(res, auditionsJson, 200)
   } catch (e) {
@@ -365,11 +518,24 @@ router.get('/:actor_id/auditions/requests', VerifyToken, async function(req, res
   try {
     var requests = await models.AuditionRequest.findAll(
       {
-        where: {ActorId: actor.id}
+        where: {ActorId: actor.id},
+        include: [models.Breakdown]
       }
     );
+    
     var requestsJson = requests.map(r => r.toJSON());
     
+    for (var [idx, request] of requests.entries()) {
+      
+      var roles = await request.Breakdown.getRole()
+      
+      for (var role of roles) {
+        if (request.roleId === role.id) {
+          requestsJson[idx].role = role.name   
+        }
+      }
+    }
+
     return ReS(res, requestsJson, 200)
   } catch (e) {
     return ReE(res, {error: e}, 500)
