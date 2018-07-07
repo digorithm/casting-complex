@@ -155,7 +155,7 @@
                           <template v-if="isSelfViewing">
                             <v-btn small to="/edit/agent" block color="primary"> Edit your profile </v-btn>
                           </template>
-                          <template v-if="isActorViewing">
+                          <template v-if="isActorViewing && !viewerIsReppedByThisAgent">
                             <v-btn @click="requestRep()" small block color="primary">Request
                             representation </v-btn>
                             <v-alert transition="scale-transition" :value="requestSentAlert" type="success">
@@ -165,6 +165,18 @@
                             <v-alert transition="scale-transition" :value="doubleRequestAlert" type="error">
                               You already requested this agent. This agent should reply soon :-).
                               <v-btn flat color="white" @click.native="doubleRequestAlert = false">Close</v-btn>
+                            </v-alert>
+                          </template>
+                          <template v-if="isActorViewing && viewerIsReppedByThisAgent">
+                            <em>This is your agent</em>
+                            <v-btn @click="cancelRep()" small block color="error">Cancel representation </v-btn>
+                            <v-alert transition="scale-transition" :value="cancelRepSuccessAlert" type="success">
+                              Your representation has been canceled.
+                              <v-btn flat color="white" @click.native="cancelRepSuccessAlert = false">Close</v-btn>
+                            </v-alert>
+                            <v-alert transition="scale-transition" :value="cancelRepFailAlert" type="error">
+                              Something went wrong. We're on it!
+                              <v-btn flat color="white" @click.native="cancelRepFailAlert = false">Close</v-btn>
                             </v-alert>
                           </template>
                         </v-flex>
@@ -296,6 +308,7 @@ export default {
       isActorViewing: false,
       isAgentViewing: false,
       isDirectorViewing: false,
+      viewerIsReppedByThisAgent: false,
       isRepped: false,
       headers: [{
         text: 'Project',
@@ -338,7 +351,9 @@ export default {
       actors: [],
       viewerProfile: '',
       doubleRequestAlert: false,
-      requestSentAlert: false
+      requestSentAlert: false,
+      cancelRepFailAlert: false,
+      cancelRepSuccessAlert: false
     }
   },
   beforeCreate () {
@@ -384,18 +399,15 @@ export default {
     },
     buildActorsProps (actors) {
       for (var actor of actors) {
-        this.getAvatarFromActor(actor.userId)
-          .then((data) => {
-            this.actors.push(
-              {
-                name: actor.firstName + ' ' + actor.lastName,
-                username: actor.user.username,
-                photo: data
-              }
-            )
-          }).catch((err) => {
-            console.log(err)
-          })
+        this.actors.push(
+          {
+            id: actor.id,
+            name: actor.firstName + ' ' + actor.lastName,
+            username: actor.user.username,
+            photo: actor.user.avatar
+          }
+        )
+        this.defineViewer()
       }
     },
     fetchAgent (username) {
@@ -416,9 +428,37 @@ export default {
           this.profile.avatar = profile.user.avatar
           this.fetchAlbum()
           this.buildActorsProps(profile.actors)
-          this.defineViewer()
         }).catch((err) => {
           console.log(err)
+        })
+    },
+    cancelRep () {
+      if (!confirm('Are you sure you want to cancel representation with this agent?')) return
+
+      var config = {
+        headers: {
+          'x-access-token': localStorage.getItem('session_token'),
+          'Content-Type': undefined
+        }
+      }
+
+      const url = `${CastingComplexAPI}/actors/agents/${this.profile.agentId}`
+      return Axios.delete(url, config)
+        .then(res => {
+          console.log(res)
+          this.cancelRepSuccessAlert = true
+          var idxToDelete = null
+          for (var [idx, actor] of this.actors.entries()) {
+            if (actor.id === this.viewerProfile.id) {
+              idxToDelete = idx
+            }
+          }
+          this.actors.splice(idxToDelete, 1)
+          this.viewerIsReppedByThisAgent = false
+        })
+        .catch(err => {
+          console.log(err)
+          this.cancelRepFailAlert = true
         })
     },
     requestRep () {
@@ -442,9 +482,19 @@ export default {
       if (this.viewerProfile.user.id !== this.profile.userId) {
         this.isSelfViewing = false
 
-        if (isActor) this.isActorViewing = true
-        if (isAgent) this.isAgentViewing = true
-        if (isDirector) this.isDirectorViewing = true
+        if (isActor()) {
+          this.isActorViewing = true
+          // Check if this viewer is one of the actors repped by this agent
+          for (var actor of this.actors) {
+            if (this.viewerProfile.id === actor.id) {
+              this.viewerIsReppedByThisAgent = true
+            }
+          }
+        }
+        if (isAgent()) {
+          this.isAgentViewing = true
+        }
+        if (isDirector()) this.isDirectorViewing = true
       } else {
         this.isSelfViewing = true
       }

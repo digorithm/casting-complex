@@ -33,7 +33,7 @@
       </v-data-table>
       <v-layout justify-center>
        <v-card-actions>
-        <v-btn color="primary" small>View all auditions</v-btn>
+        <v-btn :to="{name: 'Auditions'}" color="primary" small>View all auditions</v-btn>
       </v-card-actions>
       </v-layout>
     </v-card-text>

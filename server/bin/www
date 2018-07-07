@@ -9,6 +9,7 @@ var debug = require('debug')('express-sequelize');
 var http = require('http');
 var models = require('../models');
 
+
 /**
  * Get port from environment and store in Express.
  */
@@ -19,6 +20,8 @@ app.set('port', port);
    * Create HTTP server.
    */
 var server = http.createServer(app);
+var io = require('socket.io').listen(server);
+var chat_system = require('../routes/chat_system')(io)
 
 // add {force: true} to sync() to delete everything from the db when the server starts
 models.sequelize.sync().then(function() {

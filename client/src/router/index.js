@@ -23,6 +23,8 @@ import JobBoard from '@/components/pages/JobBoard'
 import Breakdown from '@/components/pages/Breakdown'
 import SearchActor from '@/components/pages/SearchActor'
 import ManageActors from '@/components/pages/ManageActors'
+import Auditions from '@/components/pages/Auditions'
+import Messaging from '@/components/pages/Messaging'
 
 import NotFound from '@/components/pages/NotFound'
 
@@ -251,6 +253,24 @@ export default new Router({
       name: 'Manage actors',
       components: {
         default: ManageActors,
+        header: Header,
+        footer: Footer
+      }
+    },
+    {
+      path: '/auditions',
+      name: 'Auditions',
+      components: {
+        default: Auditions,
+        header: Header,
+        footer: Footer
+      }
+    },
+    {
+      path: '/message',
+      name: 'Message',
+      components: {
+        default: Messaging,
         header: Header,
         footer: Footer
       }

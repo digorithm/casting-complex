@@ -183,13 +183,36 @@
                         <template v-if="!profile.isRepped">
                           <h4>{{profile.fullname}} does not have an agent.</h4>
 
-                          <v-btn v-if="isAgentViewing" small block color="primary"> Click here to hire this actor </v-btn>
+                          <!-- <v-btn @click="requestRepToActor()" v-if="isAgentViewing" small block color="primary"> Click here to hire this actor </v-btn> -->
+
+                          <!-- <v-alert transition="scale-transition" :value="requestSentAlert" type="success">
+                              Your request was sent!
+                              <v-btn flat color="white" @click.native="requestSentAlert = false">Close</v-btn>
+                            </v-alert>
+                          <v-alert transition="scale-transition" :value="doubleRequestAlert" type="error">
+                            You already requested this actor. This actor should reply soon :-).
+                            <v-btn flat color="white" @click.native="doubleRequestAlert = false">Close</v-btn>
+                          </v-alert> -->
                         </template>
 
                         <template v-if="profile.isRepped">
                           <h3>Representation</h3>
                           {{profile.fullname}} is represented by <strong><router-link :to="{ name: 'Agent profile', params: { username: profile.agent.username }}">{{profile.agent.name}}</router-link></strong> from <strong>{{profile.agent.agencyName}}</strong>.
                         </template>
+
+                        <template v-if="isAgentViewing && viewerRepsThisActor">
+                          <v-divider></v-divider>
+                            <p><em>You represent this actor</em></p>
+                            <v-btn @click="cancelRep()" small block color="error">Cancel representation </v-btn>
+                            <v-alert transition="scale-transition" :value="cancelRepSuccessAlert" type="success">
+                              Your representation has been canceled.
+                              <v-btn flat color="white" @click.native="cancelRepSuccessAlert = false">Close</v-btn>
+                            </v-alert>
+                            <v-alert transition="scale-transition" :value="cancelRepFailAlert" type="error">
+                              Something went wrong. We're on it!
+                              <v-btn flat color="white" @click.native="cancelRepFailAlert = false">Close</v-btn>
+                            </v-alert>
+                          </template>
 
                         <template v-if="isSelfViewing">
                           <v-btn small to="/edit/actor" block color="primary"> Edit your profile </v-btn>
@@ -348,7 +371,12 @@ export default {
       uploadFieldName: 'photos',
       uploadAlbumFieldName: 'album',
       viewPhotoIndex: 0,
-      viewerProfile: ''
+      viewerProfile: '',
+      requestSentAlert: false,
+      doubleRequestAlert: false,
+      viewerRepsThisActor: false,
+      cancelRepSuccessAlert: false,
+      cancelRepFailAlert: false
     }
   },
   beforeCreate () {
@@ -376,20 +404,66 @@ export default {
     }
   },
   methods: {
+    fetchAgentActors () {
+      var config = {
+        headers: {
+          'x-access-token': localStorage.getItem('session_token'),
+          'Content-Type': undefined
+        }
+      }
+      return Axios.get(`${CastingComplexAPI}/agents/${this.viewerProfile.id}/actors`, config).then(res => {
+        return res.data.data
+      }).catch(e => {
+        console.log(e)
+      })
+    },
     defineViewer () {
       if (this.viewerProfile.user.id !== this.profile.userId) {
         this.isSelfViewing = false
 
-        if (this.isActor) this.isActorViewing = true
-        if (this.isAgent) this.isAgentViewing = true
-        if (this.isDirector) this.isDirectorViewing = true
+        if (isActor()) {
+          this.isActorViewing = true
+        }
+        if (isAgent()) {
+          this.isAgentViewing = true
+          // get agents actors and see if this is one of them
+          this.fetchAgentActors().then(actors => {
+            for (let actor of actors) {
+              if (actor.id === this.profile.id) this.viewerRepsThisActor = true
+            }
+          })
+        }
+        if (isDirector()) this.isDirectorViewing = true
       } else {
         this.isSelfViewing = true
-      } 
+      }
       console.log('Is self viewing: ' + this.isSelfViewing)
       console.log('Is actor viewing: ' + this.isActorViewing)
       console.log('Is director viewing: ' + this.isDirectorViewing)
       console.log('Is agent viewing: ' + this.isAgentViewing)
+    },
+    cancelRep () {
+      if (!confirm('Are you sure you want to cancel representation with this actor?')) return
+
+      var config = {
+        headers: {
+          'x-access-token': localStorage.getItem('session_token'),
+          'Content-Type': undefined
+        }
+      }
+
+      const url = `${CastingComplexAPI}/agents/${this.viewerProfile.id}/actors/${this.profile.id}`
+      return Axios.delete(url, config)
+        .then(res => {
+          console.log(res)
+          this.cancelRepSuccessAlert = true
+          this.profile.isRepped = false
+          this.viewerRepsThisActor = false
+        })
+        .catch(err => {
+          console.log(err.response)
+          this.cancelRepFailAlert = true
+        })
     },
     fetchActor (username) {
       Axios.get(`${CastingComplexAPI}/actors/?username=${username}`)
@@ -413,6 +487,7 @@ export default {
           this.profile.biography = profile.profile
           this.profile.userId = profile.userId
           this.profile.avatar = profile.user.avatar
+          this.profile.id = profile.id
 
           if (this.profile.isRepped) {
             this.profile.agent = profile.agent

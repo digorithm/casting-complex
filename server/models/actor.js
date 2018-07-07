@@ -101,7 +101,7 @@ module.exports = (sequelize, DataTypes) => {
 
         Actor.hasMany(models.Experience);
 
-        Actor.hasOne(models.RepRequest);
+        Actor.hasMany(models.RepRequest);
       }
     },
     instanceMethods: {

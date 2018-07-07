@@ -89,9 +89,10 @@
                             :no-data-text="noBreakdowns"
                           >
                             <template slot="items" slot-scope="props">
-                              <td>{{ props.item.name}}</td>
-                              <td>{{ props.item.mediaType}}</td>
-                              <td>{{ props.item.citiesForTransmission}}</td>
+                              <router-link class="clickable-breakdown" :to="{ name: 'Breakdown page', params: { breakdown_id: props.item.id }}" tag="td">{{ props.item.name }}</router-link>
+                              <td class="clickable-breakdown">{{ props.item.name}}</td>
+                              <td class="clickable-breakdown">{{ props.item.mediaType}}</td>
+                              <td class="clickable-breakdown">{{ props.item.citiesForTransmission}}</td>
                             </template>
                           </v-data-table>
                         </v-flex>
@@ -224,7 +225,7 @@
 </template>
 
 <script>
-import { isLoggedIn, isActor, isAgent, isDirector } from '@/components/authentication'
+import { getProfile, isLoggedIn, isActor, isAgent, isDirector } from '@/components/authentication'
 import Axios from 'axios'
 
 const CastingComplexAPI = `http://${window.location.hostname}:5050`
@@ -243,7 +244,7 @@ export default {
       pagination: {
         rowsPerPage: 12
       },
-      isSelfViewing: true,
+      isSelfViewing: false,
       isActorViewing: false,
       isAgentViewing: false,
       isDirectorViewing: false,
@@ -281,7 +282,8 @@ export default {
       viewPhotoIndex: 0,
       viewActorIndex: 0,
       actors: [],
-      directorBreakdowns: []
+      directorBreakdowns: [],
+      viewerProfile: ''
     }
   },
   beforeCreate () {
@@ -293,6 +295,7 @@ export default {
     var directorId = JSON.parse(localStorage.getItem('logged_profile')).id
     this.fetchDirector(this.$route.params.username)
     this.fetchDirectorBreakdowns(directorId)
+    this.viewerProfile = getProfile()
   },
   computed: {
     isInitial () {
@@ -327,6 +330,7 @@ export default {
           this.profile.avatar = profile.user.avatar
           this.fetchAlbum()
           this.getProfilePic()
+          this.defineViewer()
         }).catch((err) => {
           console.log(err)
         })
@@ -338,6 +342,31 @@ export default {
         .catch(function (error) {
           console.log(error)
         })
+    },
+    defineViewer () {
+      if (this.viewerProfile.user.id !== this.profile.userId) {
+        this.isSelfViewing = false
+
+        if (isActor()) {
+          this.isActorViewing = true
+          // Check if this viewer is one of the actors repped by this agent
+          for (var actor of this.actors) {
+            if (this.viewerProfile.id === actor.id) {
+              this.viewerIsReppedByThisAgent = true
+            }
+          }
+        }
+        if (isAgent()) {
+          this.isAgentViewing = true
+        }
+        if (isDirector()) this.isDirectorViewing = true
+      } else {
+        this.isSelfViewing = true
+      }
+      console.log('Is self viewing: ' + this.isSelfViewing)
+      console.log('Is actor viewing: ' + this.isActorViewing)
+      console.log('Is director viewing: ' + this.isDirectorViewing)
+      console.log('Is agent viewing: ' + this.isAgentViewing)
     },
     getCardMediaHeight () {
       var breakpoint = this.$vuetify.breakpoint.name
@@ -660,6 +689,10 @@ export default {
     overflow: hidden;
     position: absolute;
     z-index: -1;
+  }
+
+  .clickable-breakdown {
+    cursor: pointer !important;
   }
 
   .upload-photos + label {

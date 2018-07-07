@@ -24,6 +24,9 @@
                 <v-tab ripple >
                   Edit your experiences
                 </v-tab>
+                <!-- <v-tab ripple >
+                  Agent
+                </v-tab> -->
                 <v-tab-item>
                   <v-card>
                     <v-card-text>
@@ -413,6 +416,20 @@
                     </v-card-text>
                   </v-card>
                 </v-tab-item>
+                 <!-- <v-tab-item>
+                  <v-card>
+                    <v-card-text>
+                      <v-layout row wrap>
+                        <v-flex md8>
+                          <h2>Your agent</h2>
+                        </v-flex>
+                        <v-flex v-if="!isRepresented" md4>
+                          <h2>Requests</h2>
+                        </v-flex>
+                      </v-layout>
+                    </v-card-text>
+                  </v-card>
+                 </v-tab-item> -->
               </v-tabs>
             </v-flex>
           </v-layout>
@@ -583,6 +600,7 @@ export default {
       role: '',
       projectType: '',
       year: '',
+      isRepresented: '',
       experiences: '',
       validExperiences: '',
       editedIndex: -1,
@@ -833,6 +851,7 @@ export default {
       this.genderId = profile.genderId
       this.eyeId = profile.eyeId
       this.skillId = profile.skillId
+      this.isRepresented = profile.isRepresented
       this.actorSkills = profile.Skills.map(function (skill) {
         return {name: skill, isOpen: true}
       })

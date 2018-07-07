@@ -423,6 +423,65 @@ router.delete('/skills', VerifyToken, async function(req, res) {
   
 })
 
+router.post('/:actor_id/agents/requests', VerifyToken, async function(req, res) {
+  // Currently not being used
+  // Agent id is in the req header because who calls this is the actor
+  var agent = await models.Agent.findById(req.userId);
+  if (agent == null) return ReE(res, {error: "Agent not found"}, 404)
+
+  var actor = await models.Actor.findById(req.params.actor_id);
+  if (actor == null) return ReE(res, {error: "Actor not found"}, 404)
+
+  var reqs = await actor.getRepRequests()
+  // check if req exists
+  for (var req of reqs) {
+    if (req.AgentId === agent.id && req.statusId === 1) {
+      return ReE(res, "Double request", 400)
+    }
+  }
+  try {
+    var request = { statusId: 1, ActorId: actor.id, AgentId: agent.id }
+
+    var createdRequest = await models.RepRequest.create(request)
+
+    return ReS(res, "Request sent", 200)
+
+  } catch (e) {
+    return ReE(res, {error: e}, 500)
+  }
+})
+
+router.get('/:actor_id/agents/requests', VerifyToken, async function(req, res) {
+  // Currently not being used
+  if (req.params.actor_id != req.userId) {
+    return ReE(res, {error: "Bad request"}, 404) 
+  }
+
+  var actor = await models.Actor.findById(req.params.actor_id);
+
+  var reqs = await actor.getRepRequests()
+
+    // Get only pending requests
+    var filteredReqs = reqs.filter(r => r.statusId === 1)
+    
+    if (filteredReqs.length > 0) {
+      var reqsJson = filteredReqs.map(r => r.toJSON())
+
+      for (var [idx, req] of filteredReqs.entries()) {
+        var agent = await models.Agent.findById(req.AgentId)
+        var agentResponse = await agent.buildResponse()
+        var agentInfo = {}
+        agentInfo.agentName = agentResponse.firstName + ' ' + agentResponse.lastName
+        agentInfo.username = agentResponse.user.username
+        agentInfo.avatar = agentResponse.user.avatar
+        reqsJson[idx].agent = agentInfo
+      }
+
+      return ReS(res, reqsJson, 200)
+    }
+    return ReS(res, [], 200)
+});
+
 router.get('/:actor_id/agents', async function(req, res) {
 
   // TODO: decide who can see agents of an actor.
@@ -430,7 +489,6 @@ router.get('/:actor_id/agents', async function(req, res) {
   var actor = await models.Actor.findById(req.params.actor_id);
   
   if (actor.isRepresented === false) {
-    console.log("here");
     return ReS(res, {data: []}, 200);
   }
   
@@ -447,24 +505,19 @@ router.get('/:actor_id/agents', async function(req, res) {
   });
 });
 
-router.delete('/agents', VerifyToken, async function(req, res) {
+router.delete('/agents/:agent_id', VerifyToken, async function(req, res) {
 
   var actor = await models.Actor.findById(req.userId);
   if (actor == null) return ReE(res, {error: "Actor not found"}, 404)
 
-  agentIdToBeRemoved = req.body.agentId;
+  agentIdToBeRemoved = req.params.agent_id;
 
   try {
     await actor.removeAgent(agentIdToBeRemoved);
-
-    var actorAgents = await actor.getAgents();
-
-    if (actorAgents.length == 0) {
-      await models.Actor.update(
-        { isRepresented: false },
-        { where: { id: actor.id }}
-      );
-    }
+    await models.Actor.update(
+      { isRepresented: false },
+      { where: { id: actor.id }}
+    );
     
     return ReS(res, {message: "Agent removed from actor"}, 200);
   } catch(e) {

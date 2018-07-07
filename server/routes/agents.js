@@ -145,29 +145,22 @@ router.post('/actors', VerifyToken, async function(req, res) {
   }
 });
 
-router.delete('/actors', VerifyToken, async function(req, res) {
-  
-  actorIdToBeRemoved = req.body.actorId;
-
+router.delete('/:agent_id/actors/:actor_id', VerifyToken, async function(req, res) {
   var agent = await models.Agent.findById(req.userId);
   if (agent == null) return ReE(res, {error: "Agent not found"}, 404)
 
+  actorIdToBeRemoved = req.params.actor_id
+
   try {
     await agent.removeActor(actorIdToBeRemoved);
-    
-    var actor = await models.Actor.findById(actorIdToBeRemoved);
-
-    var actorAgents = await actor.getAgents();
-
-    if (actorAgents.length == 0) {
-      await models.Actor.update(
-        { isRepresented: false },
-        { where: { id: actorIdToBeRemoved }}
-      );
-    }
+    await models.Actor.update(
+      { isRepresented: false },
+      { where: { id: actorIdToBeRemoved }}
+    );
     
     return ReS(res, {message: "Actor removed from agent"}, 200);
   } catch(e) {
+    console.log(e)
     return ReE(res, {error: e}, 500);
   }
 

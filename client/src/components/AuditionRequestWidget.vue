@@ -8,8 +8,8 @@
     <v-data-table
         :headers="headers"
         :items="auditionRequests"
+        :rows-per-page-items="rowsPerPageItems"
         :no-data-text="noRequests"
-        hide-actions
       >
         <template slot="items" slot-scope="props">
           <td>{{ props.item.Breakdown.name }}</td>
@@ -18,7 +18,7 @@
         </template>
       </v-data-table>
     <v-card-actions>
-      <v-btn color="primary" block small>View all requests</v-btn>
+      <v-btn :to="{name: 'Auditions'}" color="primary" block small>View all requests</v-btn>
     </v-card-actions>
     </v-card-text>
   </v-card>
@@ -31,6 +31,7 @@ const CastingComplexAPI = `http://${window.location.hostname}:5050`
 export default {
   data () {
     return {
+      rowsPerPageItems: [3],
       pagination: {
         rowsPerPage: 4
       },

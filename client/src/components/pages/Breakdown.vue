@@ -17,32 +17,7 @@
                       <h3 class="text-xs-center">or</h3>
                     </template>
                     <v-btn to="/job-board/" color="primary">
-                      <v-icon left>arrow_back</v-icon> Go back
-                    </v-btn>
-                    <h3 class="text-xs-center">or</h3>
-                    <v-text-field
-                      v-model="search"
-                      append-icon="search"
-                      label="Search"
-                      single-line
-                      hide-details
-                    ></v-text-field>
-                    <v-select
-                      :items="MediaTypes"
-                      v-model="searchQuery.mediaType"
-                      item-text="name"
-                      item-value="id"
-                      label="Media types"
-                      multiple
-                      autocomplete
-                      chips
-                    ></v-select>
-                    <v-checkbox
-                      label="Requires unions?"
-                      v-model="searchQuery.requiresUnion"
-                    ></v-checkbox>
-                    <v-btn color="primary" flat block dark>Search
-                      <v-icon dark right>search</v-icon>
+                      <v-icon left>work</v-icon> Go to job board
                     </v-btn>
                   </v-layout>
                 </v-card-text>

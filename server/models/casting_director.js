@@ -59,7 +59,7 @@ module.exports = (sequelize, DataTypes) => {
         var castingDirectorSpecializations = await this.getCastingSpecializations();
 
         var castingDirectorJson = this.toJSON();
-        castingDirectorJson.user = castingDirectorUser.toJSON();
+        castingDirectorJson.user = await castingDirectorUser.buildResponse();
 
         castingDirectorJson.specializationId = castingDirectorSpecializations.map(s => s.id);
         castingDirectorJson.specializations = castingDirectorSpecializations.map(s => s.name);

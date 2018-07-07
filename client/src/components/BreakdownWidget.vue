@@ -23,12 +23,26 @@
         lg12
       >
         <v-card>
-          <v-card-title><h4>{{ props.item.name }}</h4></v-card-title>
-          <v-divider></v-divider>
+          <v-card-title><h4>Project name: {{ props.item.name }}</h4></v-card-title>
+          <v-card-text>
+            <h4>Casting director</h4>
+            {{ props.item.directorName }}
+            <h4>Rates</h4>
+            {{ props.item.rates }}
+            <h4>Synopsis</h4>
+            {{ props.item.synopsis }}
+            <v-spacer></v-spacer>
+            <v-chip v-if="!props.item.requiresUnion">Requires union</v-chip>
+            <v-chip v-else>Does not require union</v-chip>
+          </v-card-text>
+          <v-card-actions>
+            <v-btn :to="{name: 'Breakdown page', params: {breakdown_id: props.item.id}}" color="primary" flat>View breakdown</v-btn>
+          </v-card-actions>
+          <!-- <v-divider></v-divider>
           <v-list dense>
             <v-list-tile>
               <v-list-tile-content>Director:</v-list-tile-content>
-              <v-list-tile-content class="align-end">{{ props.item.director }}</v-list-tile-content>
+              <v-list-tile-content class="align-end">{{ props.item.directorName }}</v-list-tile-content>
             </v-list-tile>
             <v-list-tile>
               <v-list-tile-content>Requires union:</v-list-tile-content>
@@ -43,17 +57,16 @@
               <v-list-tile-content class="align-end">{{ props.item.citiesForTransmission }}</v-list-tile-content>
             </v-list-tile>
             <v-list-tile>
-              <v-list-tile-content>Synopsis:</v-list-tile-content>
-              <v-list-tile-content class="align-end">{{ props.item.synopsis }}</v-list-tile-content>
+              <v-list-tile-content>{{ props.item.synopsis }}</v-list-tile-content>
             </v-list-tile>
-          </v-list>
+          </v-list> -->
         </v-card>
       </v-flex>
     </v-data-iterator>
     </v-card-text>
     <v-layout justify-center>
       <v-card-actions>
-        <v-btn color="primary" block small>View all breakdowns</v-btn>
+        <v-btn :to="{name: 'Job board'}" color="primary" block small>View all breakdowns</v-btn>
       </v-card-actions>
     </v-layout>
   </v-card>

@@ -6,10 +6,15 @@ import router from './router'
 import VueCookie from 'vue-cookie'
 import Vuetify from 'vuetify'
 import colors from 'vuetify/es5/util/colors'
+//
+// import VueSocketIO from 'vue-socket.io'
+
+// export const SocketInstance = io(`http://${window.location.hostname}:5050`)
 
 import('../node_modules/vuetify/dist/vuetify.min.css')
 
 Vue.use(VueCookie)
+// Vue.use(VueSocketIO, SocketInstance)
 Vue.use(Vuetify, {
   theme: {
     primary: '#085f89',

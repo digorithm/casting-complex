@@ -8,7 +8,7 @@
       {{ fullName }}
       </v-flex>
       <v-flex d-flex md5>
-        <v-btn color="primary" style="min-width: 0 !important; padding: 0 !important;" small><v-icon>edit</v-icon></v-btn>
+        <v-btn color="primary" :to="getEditProfileLink()" style="min-width: 0 !important; padding: 0 !important;" small><v-icon>edit</v-icon></v-btn>
       </v-flex>
       </v-layout>
     </v-card-title>
@@ -29,9 +29,18 @@
     </v-card-text>
     <v-card-actions>
       <v-layout justify-center>
-        <v-btn v-if="isActor" color="primary" to="/actor-profile" small>View public profile</v-btn>
-        <v-btn v-if="isAgent" color="primary" to="/agent-profile" small>View public profile</v-btn>
-        <v-btn v-if="isDirector" color="primary" to="/director-profile" small>View public profile</v-btn>
+        <v-btn v-if="isActor" color="primary"
+        :to="{name: 'Actor profile',
+        params: {username: this.profile.user.username}}"
+        small>View public profile</v-btn>
+        <v-btn v-if="isAgent" color="primary"
+        :to="{name: 'Agent profile',
+        params: {username: this.profile.user.username}}"
+        small>View public profile</v-btn>
+        <v-btn v-if="isDirector" color="primary"
+        :to="{name: 'Casting director profile',
+        params: {username: this.profile.user.username}}"
+        small>View public profile</v-btn>
       </v-layout>
     </v-card-actions>
   </v-card>
@@ -93,6 +102,15 @@ export default {
     }
   },
   methods: {
+    getEditProfileLink () {
+      if (isActor()) {
+        return {name: 'Edit actor profile'}
+      } else if (isAgent()) {
+        return {name: 'Edit agent profile'}
+      } else if (isDirector()) {
+        return {name: 'Edit casting director profile'}
+      }
+    },
     fetchAvatar () {
       Axios.get(`${CastingComplexAPI}/users/${this.profile.userId}/photos/profile`)
         .then((data) => {

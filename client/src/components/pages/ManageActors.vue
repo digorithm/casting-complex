@@ -99,7 +99,6 @@
 <script>
 // import { isLoggedIn, isActor, isAgent, isDirector } from '@/components/authentication'
 import Axios from 'axios'
-import _ from 'lodash'
 
 const CastingComplexAPI = `http://${window.location.hostname}:5050`
 
@@ -142,7 +141,7 @@ export default {
 
       const url = `${CastingComplexAPI}/agents/${this.agentId}/requests/${reqId}/reply`
       return Axios.post(url, {accepts: accepts}, config)
-        .then(x => {  
+        .then(x => {
           this.replySentAlert = true
           if (accepts) {
             this.fetchAgentActors(this.agentId)
