@@ -123,7 +123,4 @@ export default {
 
 <style lang="scss">
   @import "./../assets/styles";
-  .list__tile__content {
-    text-align: right !important;
-  }
 </style>

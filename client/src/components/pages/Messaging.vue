@@ -12,12 +12,22 @@
                   <h2>Recent messages</h2>
                 </v-card-title>
                 <v-card-text>
+                  <v-divider></v-divider>
                   <v-list two-line>
                     <template v-for="(chat, index) in chats">
                       <v-list-tile avatar @click="toUser = chat.username" :key=index>
+                        <v-badge left v-model="chat.unreadMessage" color="white">
+                          <span slot="badge">
+                            <v-icon
+                            slot="badge"
+                            color="red"
+                            small
+                            >fiber_manual_record</v-icon>
+                          </span>
                         <v-list-tile-avatar>
-                          <img :src="chat.avatar" >
+                            <img :src="chat.avatar" >
                         </v-list-tile-avatar>
+                        </v-badge>
                         <v-list-tile-content>
                           <v-list-tile-title v-html="chat.username"></v-list-tile-title>
                           <v-list-tile-sub-title v-html="chat.lastMessage"></v-list-tile-sub-title>
@@ -80,9 +90,18 @@
                                     <v-layout row wrap mb-3>
                                       <v-spacer></v-spacer>
                                       <v-flex md8 class="text-xs-right">
-                                        <p class="message me">
-                                          {{message.message}}
-                                        </p>
+                                        <v-badge left v-model="message.read" color="white">
+                                          <span slot="badge">
+                                            <v-icon
+                                            slot="badge"
+                                            light
+                                            small
+                                            >done</v-icon>
+                                          </span>
+                                          <p class="message me">
+                                            {{message.message}}
+                                          </p>
+                                        </v-badge>
                                       </v-flex>
                                       <v-flex md1 mr-3 class="text-xs-right">
                                         <v-avatar>
@@ -94,9 +113,11 @@
                                   <template v-else>
                                     <v-layout row wrap mb-3>
                                       <v-flex md1>
+                                        <router-link :to="message.toUserProfileLink">
                                         <v-avatar>
-                                          <img :src="profile.user.avatar">
+                                            <img :src="message.toUserAvatar">
                                         </v-avatar>
+                                        </router-link>
                                       </v-flex>
                                       <v-flex md8>
                                         <p class="message other-person">
@@ -136,8 +157,7 @@
 <script>
 import Axios from 'axios'
 import io from 'socket.io-client'
-import _ from 'lodash'
-import { getProfile, isLoggedIn, isActor, isAgent, isDirector } from '@/components/authentication'
+import { getProfile, isLoggedIn, isActor, isAgent, isDirector, isAccountApproved } from '@/components/authentication'
 
 const CastingComplexAPI = `http://${window.location.hostname}:5050`
 
@@ -145,6 +165,11 @@ export default {
   beforeMount () {
     if (!isLoggedIn()) {
       this.$router.push('/')
+    }
+    if (isAgent() || isDirector()) {
+      if (!isAccountApproved()) {
+        this.$router.push('/waiting-approval')
+      }
     }
   },
   data () {
@@ -191,10 +216,24 @@ export default {
     this.socket.emit('open_chat', {username: this.profile.user.username})
     this.fetchUsers()
 
+    this.socket.on('message_read', (data) => {
+      // Is this in opened chat?
+      if (data.reader === this.toUser) {
+        this.messages.map(function (m) { m.read = true })
+      }
+    })
+
     this.socket.on('new_message', (data) => {
       // Display message if it is the opened chat
+      var chatIsOpened = false
       if (data.from === this.toUser || data.from === this.profile.user.username) {
         this.messages.push(data)
+        chatIsOpened = true
+
+        if (data.from !== this.profile.user.username) {
+          // If the other user is seeing this, update the message to read
+          this.socket.emit('read_latest_message_from', {reader: this.profile.user.username, from: data.from})
+        }
       }
       // If it's in the recent chat, push to that
       var foundChat = false
@@ -202,6 +241,11 @@ export default {
         if (chat.username === data.from || chat.username === data.to) {
           chat.lastMessage = data.message
           foundChat = true
+          if (data.to === this.profile.user.username && !chatIsOpened) {
+            chat.unreadMessage = true
+          } else {
+            chat.unreadMessage = false
+          }
         }
       }
 
@@ -212,11 +256,16 @@ export default {
 
     this.socket.on('load_chat', (data) => {
       this.messages = data
+      for (var chat of this.chats) {
+        if (chat.username === this.messages[0].from || chat.username === this.messages[0].to) {
+          // We just loaded the chat of this chat preview, mark as seen
+          chat.unreadMessage = false
+        }
+      }
     })
 
     this.socket.on('chat_previews', (data) => {
       this.chats = data
-      this.chats = _.uniqBy(this.chats, 'username')
     })
   },
   sockets: {
@@ -225,11 +274,15 @@ export default {
     }
   },
   methods: {
+    getProfileLink (message) {
+      console.log(JSON.stringify(message))
+    },
     sendMessage () {
       var data = {
         message: this.messageToSend,
         from: this.profile.user.username,
-        to: this.toUser
+        to: this.toUser,
+        read: false
       }
       this.socket.emit('send_message', data)
       this.$refs.form.reset()
@@ -250,9 +303,6 @@ export default {
         }).catch((err) => {
           console.log(err)
         })
-    },
-    sendSomething () {
-      this.socket.emit('something', {my: 'data'})
     }
   }
 }

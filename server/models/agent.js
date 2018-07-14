@@ -22,7 +22,8 @@ module.exports = (sequelize, DataTypes) => {
     zipPostal: DataTypes.STRING,
     website: DataTypes.STRING,
     sizeOfRoster: DataTypes.INTEGER,
-    profile: DataTypes.TEXT
+    profile: DataTypes.TEXT,
+    accountApproved: { type: DataTypes.BOOLEAN, defaultValue: false }
   }, {
     associations: true,
     classMethods: {

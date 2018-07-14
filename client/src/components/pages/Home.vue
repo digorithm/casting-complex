@@ -38,7 +38,6 @@
                     </v-flex>
                   </v-layout>
                   <v-card-text>
-                    <!--{{ role() }}-->
                     <p>
                       Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla condimentum lacus ut risus suscipit consequat ac sed nisl. Ut volutpat urna non est bibendum pretium. Maecenas luctus cursus tellus ut porttitor. Phasellus commodo neque nulla. Donec hendrerit a mi at congue. Fusce vel felis auctor, consequat erat non, pretium justo. Nulla egestas justo eu orci fringilla, eget venenatis risus scelerisque. Morbi interdum ligula mi, tempus tempus mi interdum nec. Ut suscipit neque orci, ac rutrum risus cursus et. Curabitur vel odio massa. Integer viverra sem sed massa ullamcorper ultricies. Pellentesque ultrices massa eget mi blandit, placerat convallis risus ullamcorper. Vestibulum nec sapien vehicula, pellentesque tellus non, varius lorem.
                     </p>
@@ -109,22 +108,6 @@ export default {
         profile: '/'
       },
       cities: [],
-      role: function () {
-        var logged = localStorage.getItem('logged_profile')
-        if (logged !== null) {
-          var roleId = JSON.parse(localStorage.getItem('logged_profile')).user.roleId
-
-          if (roleId === 1) {
-            return 'Actor'
-          } else if (roleId === 2) {
-            return 'Agent'
-          } else {
-            return 'Casting Director'
-          }
-        } else {
-          return 'No session'
-        }
-      },
       list: [
         {
           id: 1,

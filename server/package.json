@@ -1,16 +1,18 @@
 {
-  "name": "express-example",
+  "name": "casting-complex-server",
   "version": "0.0.0",
   "private": true,
   "scripts": {
     "seed": "./node_modules/.bin/sequelize --config ./config/config.js --seeders-path ./seeders db:seed:all",
     "start": "DEBUG=express-sequelize node ./bin/www",
+    "dev": "nodemon start",
     "test": "npm run test-unit && npm run test-integration",
     "test-unit": "cross-env NODE_ENV=test ./node_modules/.bin/mocha --timeout 5000 test/unit/*.test.js",
     "test-integration": "cross-env NODE_ENV=test ./node_modules/.bin/mocha --timeout 5000 test/integration/*.test.js"
   },
   "dependencies": {
     "aglio": "^2.3.0",
+    "aws-sdk": "^2.274.1",
     "bcrypt": "^1.0.3",
     "bcryptjs": "^2.4.3",
     "bluebird": "^3.5.1",

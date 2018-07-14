@@ -97,7 +97,7 @@
 </template>
 
 <script>
-// import { isLoggedIn, isActor, isAgent, isDirector } from '@/components/authentication'
+import { isLoggedIn, isAgent, isAccountApproved } from '@/components/authentication'
 import Axios from 'axios'
 
 const CastingComplexAPI = `http://${window.location.hostname}:5050`
@@ -111,6 +111,14 @@ export default {
       replySentAlert: false,
       actorAlreadyReppedAlert: false,
       somethingWentWrongAlert: false
+    }
+  },
+  beforeCreate () {
+    if (!isLoggedIn() && !isAgent()) {
+      this.$router.push('/')
+    }
+    if (!isAccountApproved()) {
+      this.$router.push('/waiting-approval')
     }
   },
   beforeMount () {

@@ -3,6 +3,7 @@
 module.exports = (sequelize, DataTypes) => {
   const ChatMessage = sequelize.define('ChatMessage', {
     message: DataTypes.TEXT,
+    read: DataTypes.BOOLEAN
   }, {
     classMethods: {
       associate: function(models) {

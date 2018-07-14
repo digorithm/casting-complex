@@ -73,7 +73,8 @@ export default {
       isAgent: isAgent(),
       isActor: isActor(),
       isDirector: isDirector(),
-      profilePic: ''
+      profilePic: '',
+      avatar: ''
     }
   },
   beforeCreate () {
@@ -114,8 +115,7 @@ export default {
     fetchAvatar () {
       Axios.get(`${CastingComplexAPI}/users/${this.profile.userId}/photos/profile`)
         .then((data) => {
-          var src = 'data:image/jpeg;base64,' + data.data.avatar
-          this.profilePic = src
+          this.profilePic = data.data.avatar
         }).catch((err) => {
           console.log(err)
         })

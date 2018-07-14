@@ -37,7 +37,7 @@
 </template>
 
 <script>
-import { isLoggedIn, isRegistrationInProgress, isDirector } from '@/components/authentication'
+import { isLoggedIn, isRegistrationInProgress, isDirector, isAccountApproved } from '@/components/authentication'
 
 export default {
   data () {
@@ -47,6 +47,9 @@ export default {
   beforeCreate () {
     if (!isLoggedIn() || isRegistrationInProgress() || !isDirector()) {
       this.$router.push('/')
+    }
+    if (!isAccountApproved()) {
+      this.$router.push('/waiting-approval')
     }
   },
   mounted () {

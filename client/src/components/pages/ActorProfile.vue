@@ -60,7 +60,7 @@
                         </v-btn>
                         <v-btn icon small flat color="white"> <v-icon>fa fa-instagram</v-icon>
                         </v-btn>
-                        <v-btn small>
+                        <v-btn v-if="!isSelfViewing" @click="sendMessageDialog()" small>
                           <v-icon style="color: black !important;" dark left>message</v-icon>
                           message
                         </v-btn>
@@ -261,7 +261,7 @@
                                 <v-card-media
                                   height="200px"
                                 >
-                                  <img @click="viewPhoto(key, photo.name)" class="photo text-xs-center" :src=photo.photo>
+                                  <img @click="viewPhoto(key, photo.name)" class="photo text-xs-center" :src=photo.path>
                                 </v-card-media>
                               </v-card>
                             </v-flex>
@@ -287,7 +287,7 @@
                           </v-flex>
                           <v-flex xs8 md8>
                             <v-card-text>
-                              <img class="view-photo" :src=album[viewPhotoIndex].photo>
+                              <img class="view-photo" :src=album[viewPhotoIndex].path>
                             </v-card-text>
                           </v-flex>
                           <v-flex xs2 md2>
@@ -302,12 +302,14 @@
           </v-layout>
         </v-container>
       </v-content>
+      <send-message-dialog></send-message-dialog>
      <app-footer></app-footer>
 </main>
 </template>
 
 <script>
 import { getProfile, isLoggedIn, isActor, isAgent, isDirector } from '@/components/authentication'
+import {bus} from '../../main'
 import Axios from 'axios'
 
 const CastingComplexAPI = `http://${window.location.hostname}:5050`
@@ -363,7 +365,8 @@ export default {
         experience: [],
         languages: [],
         biography: '',
-        agent: ''
+        agent: '',
+        avatar: ''
       },
       uploadedFiles: [],
       uploadError: null,
@@ -404,6 +407,10 @@ export default {
     }
   },
   methods: {
+    sendMessageDialog () {
+      var data = {fromUser: this.viewerProfile.user.username, toUser: this.$route.params.username}
+      bus.$emit('open_message_dialog', data)
+    },
     fetchAgentActors () {
       var config = {
         headers: {
@@ -488,11 +495,9 @@ export default {
           this.profile.userId = profile.userId
           this.profile.avatar = profile.user.avatar
           this.profile.id = profile.id
-
           if (this.profile.isRepped) {
             this.profile.agent = profile.agent
           }
-          console.log(JSON.stringify(this.profile.agent))
 
           this.getProfilePic()
           this.defineViewer()
@@ -555,9 +560,7 @@ export default {
     fetchAlbum () {
       Axios.get(`${CastingComplexAPI}/users/${this.profile.userId}/photos`)
         .then((data) => {
-          this.album = data.data.album.map(function (p) {
-            return { photo: 'data:image/jpeg;base64,' + p.photo, name: p.name }
-          })
+          this.album = data.data.album
         }).catch((err) => {
           console.log(err)
         })
@@ -614,6 +617,9 @@ export default {
           this.reset()
         })
     },
+    sleep (ms) {
+      return new Promise(resolve => setTimeout(resolve, ms))
+    },
     uploadAlbum (formData) {
       var config = {
         headers: {
@@ -636,7 +642,9 @@ export default {
 
       const url = `${CastingComplexAPI}/users/photos/profile`
       return Axios.post(url, formData, config)
-        .then(x => console.log(x))
+        .then(res => {
+          this.profile.avatar = res.data.data
+        })
     },
     filesChange (fieldName, fileList) {
       console.log(fieldName)
@@ -662,8 +670,6 @@ export default {
       this.save(formData)
     },
     viewPhoto (index, name) {
-      console.log('Index is: ' + index)
-      console.log('Name is: ' + name)
       this.viewPhotoIndex = index
       this.displayPhoto = true
     },
@@ -682,13 +688,16 @@ export default {
         headers: {
           'x-access-token': localStorage.getItem('session_token'),
           'Content-Type': undefined
-        },
-        data: { photo_name: this.album[this.viewPhotoIndex].name }
+        }
       }
-      Axios.delete(`${CastingComplexAPI}/users/${this.profile.userId}/photos`, data)
+
+      Axios.delete(`${CastingComplexAPI}/users/${this.profile.userId}/photos/${this.album[this.viewPhotoIndex].id}`, data)
         .then((data) => {
-          console.log(data)
+          var albumLength = this.album.length
           this.album.splice(this.viewPhotoIndex, 1)
+          if (this.viewPhotoIndex + 1 === albumLength) {
+            this.viewPhotoIndex = 0
+          }
           if (this.album.length === 0) {
             this.viewPhotoIndex = 0
             this.displayPhoto = false
@@ -795,13 +804,6 @@ export default {
   .card-btn-right {
     border-right: solid 1px #e4e4e4 !important;
   }
-
-  .badge__badge {
-    border-radius: 10% !important;
-    width: 70px !important;
-    font-size: 12px !important;
-  }
-
    @media screen and (max-width: 600px){
     .container {
       padding: $content-padding-top 0 0 0 !important;

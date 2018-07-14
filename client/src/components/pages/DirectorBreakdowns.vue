@@ -282,7 +282,7 @@
 </template>
 
 <script>
-// import { isLoggedIn, isActor, isAgent, isDirector } from '@/components/authentication'
+import { isLoggedIn, isDirector, isAccountApproved } from '@/components/authentication'
 import Axios from 'axios'
 import _ from 'lodash'
 
@@ -332,6 +332,14 @@ export default {
     var directorId = JSON.parse(localStorage.getItem('logged_profile')).id
     this.getExtras()
     this.fetchDirectorBreakdowns(directorId)
+  },
+  beforeCreate () {
+    if (!isLoggedIn() && !isDirector()) {
+      this.$router.push('/')
+    }
+    if (!isAccountApproved()) {
+      this.$router.push('/waiting-approval')
+    }
   },
   watch: {
     'form.submissionDeadline': function (val) {

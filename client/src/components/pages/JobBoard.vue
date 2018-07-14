@@ -113,11 +113,20 @@
 
 <script>
 import Axios from 'axios'
+import { isActor, isLoggedIn, isAccountApproved } from '@/components/authentication'
 import _ from 'lodash'
 
 const CastingComplexAPI = `http://${window.location.hostname}:5050`
 
 export default {
+  beforeCreate () {
+    if (!isLoggedIn()) {
+      this.$router.push('/')
+    }
+    if (!isActor() && !isAccountApproved()) {
+      this.$router.push('/waiting-approval')
+    }
+  },
   beforeMount () {
     this.fetchBreakdowns()
     this.getExtras()

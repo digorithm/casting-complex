@@ -35,8 +35,21 @@
         :key="item.title"
         color="white"
         :to="item.path">
-        <v-icon class="hidden-sm-and-down" left dark>{{ item.icon }}</v-icon>
-        {{ item.title }}
+        <template v-if="item.title !== 'Messages'">
+          <v-icon class="hidden-sm-and-down" left dark>{{ item.icon }}</v-icon>
+          {{ item.title }}
+        </template>
+        <template v-else>
+          <template v-if="unreadMessages > 0">
+            <v-badge color="red" left>
+              <span slot="badge">{{unreadMessages}}</span>
+                <v-icon class="hidden-sm-and-down" dark>{{ item.icon }}</v-icon>
+            </v-badge>
+          </template>
+          <template v-else>
+            <v-icon class="hidden-sm-and-down" dark>{{ item.icon }}</v-icon>
+          </template>
+        </template>
       </v-btn>
       <v-btn color="white" v-if="!isLoggedIn() || isRegistrationInProgress()" v-on:click.native="openDialog()" flat>
         <v-icon class="hidden-sm-and-down" left dark>lock_open</v-icon>
@@ -63,7 +76,8 @@
 
 <script>
 import {bus} from '../main'
-import { logout, isLoggedIn, isActor, isAgent, isDirector, isRegistrationInProgress } from '@/components/authentication'
+import io from 'socket.io-client'
+import { logout, isLoggedIn, isAdmin, isActor, isAgent, isDirector, isRegistrationInProgress } from '@/components/authentication'
 import Axios from 'axios'
 const CastingComplexAPI = `http://${window.location.hostname}:5050`
 
@@ -94,22 +108,40 @@ export default {
       loginMessage: 'Hello, I\'m a snackbar',
       profilePic: '',
       profile: {
-        userId: ''
-      }
+        userId: '',
+        avatar: ''
+      },
+      unreadMessages: ''
     }
   },
   mounted () {
     // TODO: don't load logged navbar if registration is in progress
     this.getCorrectToolbar()
+    if (isLoggedIn()) {
+      this.socket = io.connect(CastingComplexAPI)
+      this.socket.emit('logged_on', {username: this.username + '-header', userId: this.profile.userId})
+
+      this.socket.on('new_message', () => {
+        this.unreadMessages = this.unreadMessages + 1
+      })
+
+      this.socket.on('unread_messages', data => {
+        this.unreadMessages = data
+      })
+    }
   },
   created: function () {
     this.profile.userId = JSON.parse(localStorage.getItem('logged_profile')).userId
+    this.profile.avatar = localStorage.getItem('logged_profile').avatar
     this.username = JSON.parse(localStorage.getItem('logged_profile')).user.username
     if (isActor()) {
       this.fetchAvatar()
     } else if (isAgent()) {
       this.fetchAvatar()
     } else if (isDirector()) {
+      this.fetchAvatar()
+    } else if (isAdmin()) {
+      this.profile.userId = JSON.parse(localStorage.getItem('logged_profile')).user.id
       this.fetchAvatar()
     }
     // Whenever we get a signal from the bus telling us that the user has logged in, we update the toolbar
@@ -122,15 +154,16 @@ export default {
         if (isActor()) { vm.$router.push('/actor-dashboard') }
         if (isAgent()) { vm.$router.push('/agent-dashboard') }
         if (isDirector()) { vm.$router.push('/director-dashboard') }
+        if (isAdmin()) { vm.$router.push('/admin-dashboard') }
       }
     })
   },
   methods: {
     fetchAvatar () {
+      console.log(this.profile.userId)
       Axios.get(`${CastingComplexAPI}/users/${this.profile.userId}/photos/profile`)
         .then((data) => {
-          var src = 'data:image/jpeg;base64,' + data.data.avatar
-          this.profilePic = src
+          this.profilePic = data.data.avatar
         }).catch((err) => {
           console.log(err)
         })
@@ -153,8 +186,8 @@ export default {
         this.menuItems = [
           { title: 'Dashboard', path: '/actor-dashboard', icon: 'dashboard' },
           { title: 'Profile', path: '/actor/' + this.username, icon: 'person' },
-          { title: 'Messages', path: '/message', icon: 'message' },
-          { title: 'Job board', path: '/job-board', icon: 'work' }
+          { title: 'Job board', path: '/job-board', icon: 'work' },
+          { title: 'Messages', path: '/message', icon: 'message' }
         ]
       }
       if (isLoggedIn() && isAgent() && !isRegistrationInProgress()) {
@@ -162,8 +195,8 @@ export default {
           { title: 'Dashboard', path: '/agent-dashboard', icon: 'dashboard' },
           { title: 'Profile', path: '/agent/' + this.username, icon: 'person' },
           { title: 'Actors', path: '/manage-actors', icon: 'person' },
-          { title: 'Messages', path: '/message', icon: 'message' },
-          { title: 'Job board', path: '/job-board', icon: 'work' }
+          { title: 'Job board', path: '/job-board', icon: 'work' },
+          { title: 'Messages', path: '/message', icon: 'message' }
         ]
       }
       if (isLoggedIn() && isDirector() && !isRegistrationInProgress()) {
@@ -171,8 +204,14 @@ export default {
           { title: 'Dashboard', path: '/director-dashboard', icon: 'dashboard' },
           { title: 'Profile', path: '/director/' + this.username, icon: 'person' },
           { title: 'Breakdowns', path: '/breakdowns', icon: 'work' },
-          { title: 'Messages', path: '/message', icon: 'message' },
-          { title: 'Job board', path: '/job-board', icon: 'work' }
+          { title: 'Job board', path: '/job-board', icon: 'work' },
+          { title: 'Messages', path: '/message', icon: 'message' }
+        ]
+      }
+      if (isLoggedIn() && isAdmin()) {
+        this.menuItems = [
+          { title: 'Dashboard', path: '/admin-dashboard', icon: 'dashboard' },
+          { title: 'Messages', path: '/message', icon: 'message' }
         ]
       }
     },

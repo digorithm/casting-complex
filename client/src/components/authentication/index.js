@@ -74,3 +74,19 @@ export function isAgent () {
   }
   return false
 }
+
+export function isAdmin () {
+  var roleId = JSON.parse(localStorage.getItem('logged_profile')).user.roleId
+  if (roleId !== 1 && roleId !== 2 && roleId !== 3) {
+    return true
+  }
+  return false
+}
+
+export function isAccountApproved () {
+  var profile = localStorage.getItem('logged_profile')
+
+  if (profile) {
+    return JSON.parse(profile).accountApproved
+  }
+}

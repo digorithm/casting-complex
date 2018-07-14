@@ -1,5 +1,3 @@
-
-
 module.exports = {
   ReE: function(res, err, code){ // Error Web Response
     if(typeof err == 'object' && typeof err.message != 'undefined'){

@@ -21,7 +21,8 @@ module.exports = (sequelize, DataTypes) => {
     companyName: DataTypes.STRING,
     zipPostal: DataTypes.STRING,
     website: DataTypes.STRING,
-    profile: DataTypes.TEXT
+    profile: DataTypes.TEXT,
+    accountApproved: { type: DataTypes.BOOLEAN, defaultValue: false }
   }, {
     associations: true,
     classMethods: {

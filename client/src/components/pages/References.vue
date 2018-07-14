@@ -351,9 +351,9 @@ export default {
         localStorage.removeItem('registration_in_progress')
 
         if (isAgent()) {
-          this.$router.push('/agent-dashboard')
+          this.$router.push('/waiting-approval')
         } else if (isDirector()) {
-          this.$router.push('/director-dashboard')
+          this.$router.push('/waiting-approval')
         }
       }
     },

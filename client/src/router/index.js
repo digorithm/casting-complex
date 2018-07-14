@@ -11,6 +11,7 @@ import References from '@/components/pages/References'
 import ActorDashboard from '@/components/pages/ActorDashboard'
 import AgentDashboard from '@/components/pages/AgentDashboard'
 import DirectorDashboard from '@/components/pages/DirectorDashboard'
+import AdminDashboard from '@/components/pages/AdminDashboard'
 import ActorProfile from '@/components/pages/ActorProfile'
 import AgentProfile from '@/components/pages/AgentProfile'
 import EditActorProfile from '@/components/pages/EditActorProfile'
@@ -25,6 +26,7 @@ import SearchActor from '@/components/pages/SearchActor'
 import ManageActors from '@/components/pages/ManageActors'
 import Auditions from '@/components/pages/Auditions'
 import Messaging from '@/components/pages/Messaging'
+import WaitingApproval from '@/components/pages/WaitingApproval'
 
 import NotFound from '@/components/pages/NotFound'
 
@@ -39,6 +41,7 @@ import AuditionRequestWidget from '@/components/AuditionRequestWidget'
 import BreakdownWidget from '@/components/BreakdownWidget'
 import NewsWidget from '@/components/NewsWidget'
 import ActorsWidget from '@/components/ActorsWidget'
+import SendMessageDialog from '@/components/SendMessageDialog'
 
 import Lightbox from 'vue-simple-lightbox'
 
@@ -54,7 +57,7 @@ Vue.component('breakdown-widget', BreakdownWidget)
 Vue.component('news-widget', NewsWidget)
 Vue.component('actors-widget', ActorsWidget)
 Vue.component('lightbox', Lightbox)
-
+Vue.component('send-message-dialog', SendMessageDialog)
 Vue.use(Router)
 
 export default new Router({
@@ -145,6 +148,15 @@ export default new Router({
       name: 'Actor Dashboard',
       components: {
         default: ActorDashboard,
+        header: Header,
+        footer: Footer
+      }
+    },
+    {
+      path: '/admin-dashboard',
+      name: 'Admin Dashboard',
+      components: {
+        default: AdminDashboard,
         header: Header,
         footer: Footer
       }
@@ -271,6 +283,15 @@ export default new Router({
       name: 'Message',
       components: {
         default: Messaging,
+        header: Header,
+        footer: Footer
+      }
+    },
+    {
+      path: '/waiting-approval',
+      name: 'Waiting approval',
+      components: {
+        default: WaitingApproval,
         header: Header,
         footer: Footer
       }

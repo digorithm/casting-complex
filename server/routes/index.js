@@ -38,20 +38,30 @@ router.post('/login', async function(req, res) {
   }
 
   var roleId = user.roleId;
+  var isAdmin = false
 
   if (roleId == 1) {
     var userRole = await models.Actor.findOne( { where: { userId: user.id } } )
   } else if (roleId == 2) {
     var userRole = await models.CastingDirector.findOne( { where: { userId: user.id } } )
-  } else {
+  } else if (roleId == 3) {
     var userRole = await models.Agent.findOne( { where: { userId: user.id } } )
+  } else {
+    // Is an admin
+    isAdmin = true
+    var basicUserProfile = {}
+    basicUserProfile.user = await user.buildResponse()
+    var adminSessionToken = await user.createSession()
+  } 
+  
+  if (!isAdmin) {
+    var profile = await userRole.buildResponse()
+    var sessionToken = await userRole.createSession();
+    return ReS(res, {auth: true, session_token: sessionToken, profile: profile}, 200);
   }
 
-  var sessionToken = await userRole.createSession();
-
-  var profile = await userRole.buildResponse()
-  
-  return ReS(res, {auth: true, session_token: sessionToken, profile: profile}, 200);
+  // Admin return
+  return ReS(res, {auth: true, session_token: adminSessionToken, profile: basicUserProfile}, 200);
 
 });
 

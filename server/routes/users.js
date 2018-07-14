@@ -1,3 +1,9 @@
+var S3 = require('../S3')
+
+uploadProfilePhotoToS3 = S3.uploadProfilePhotoToS3
+uploadPhotosToS3 = S3.uploadPhotosToS3
+deleteFromS3 = S3.deleteFromS3
+
 var models  = require('../models');
 var express = require('express');
 var router  = express.Router();
@@ -34,6 +40,7 @@ var photoStorage = multer.diskStorage({
 
 var avatarUpload = multer({ storage: avatarStorage })
 var albumUpload = multer({ storage: photoStorage })
+
 
 router.get('/', async function(req, res) {
 
@@ -158,35 +165,23 @@ router.get('/messages/sent', VerifyToken, async function(req, res) {
 
 router.post('/photos/profile', VerifyToken, avatarUpload.single('avatar'), async function(req, res){
   try {
-    if (!fs.existsSync('storage/')) {
-      fs.mkdirSync('storage/')
-    }
-
-    if (!fs.existsSync('storage/' + req.baseId)) {
-      fs.mkdirSync('storage/' + req.baseId)
-    }
-
-    // Check if there's an avatar already uploaded
-    var rootFolder = path.resolve(__dirname, '../')
-    var avatarPath = 'storage/' + req.baseId
-    var avatarFolder = rootFolder + '/'+  avatarPath
-
-    var dir = fs.readdirSync(avatarFolder)
-
-    // Move uploaded file to this user's avatar folder
-    var re = /(?:\.([^.]+))?$/;
-    var fileExtension = re.exec(req.file.originalname)
-
-    var uploadedPath = 'uploads/' + req.file.originalname
-    var destinationPath = 'storage/' + req.baseId + '/avatar' + fileExtension[0]
     
-    fs.copyFileSync(uploadedPath, destinationPath)
+    var user = await models.User.findById(req.baseId)
+    var userPhotos = await user.getPhotos()
+    avatarPhoto = userPhotos.filter(p => p.isAvatar)[0]
+    if (avatarPhoto) {
+      await avatarPhoto.destroy()
+    }
+
+    var s3path = await uploadProfilePhotoToS3(req.baseId, req.file)
+
+    var photo = await models.Photo.create({path:s3path, UserId: user.id, isAvatar: true})
     
   } catch (e) {
     console.log(e)
     return ReE(res, {error: e}, 500)
   }
-  return ReS(res, {}, 200)
+  return ReS(res, {data: s3path}, 200)
 });
 
 router.get('/:user_id/photos/profile', async function(req, res) {
@@ -195,31 +190,16 @@ router.get('/:user_id/photos/profile', async function(req, res) {
    * This info isn't stored in any database
    */
   try {
-    var rootFolder = path.resolve(__dirname, '../')
-    var avatarPath = 'storage/' + req.params.user_id
+    var user = await models.User.findById(req.params.user_id)
+    var userPhotos = await user.getPhotos()
+    avatarPhoto = userPhotos.filter(p => p.isAvatar)[0]
 
-    var defaultImage = rootFolder + '/' + 'user.png'
-    var defaultImageFile = fs.readFileSync(defaultImage)
-
-    if (!fs.existsSync(avatarPath)) {
-      // no avatar set
-      // send generic image
-      return ReS(res, {avatar: defaultImageFile.toString('base64')}, 200)
+    if (!avatarPhoto) {
+      // path for default
+      return ReS(res, {avatar: 'https://s3.us-east-2.amazonaws.com/casting-complex/user.png'}, 200)
     }
-    
-    var avatarFolder = rootFolder + '/'+  avatarPath
 
-    var dir = fs.readdirSync(avatarFolder)
-
-    // Find the file called avatar or return default image if it isn't found
-    for (file of dir) {
-      if (file.split('.')[0] === 'avatar') {
-        var filePath = avatarFolder + '/' + file
-        var file = fs.readFileSync(filePath)
-        return ReS(res, {avatar: file.toString('base64')}, 200)
-      }
-    }
-    return ReS(res, {avatar: defaultImageFile.toString('base64')}, 200)
+    return ReS(res, {avatar: avatarPhoto.path}, 200)
     
   } catch (e) {
     console.log(e)
@@ -229,34 +209,18 @@ router.get('/:user_id/photos/profile', async function(req, res) {
 router.post('/photos', VerifyToken, albumUpload.array('album', 12), async function(req, res){
 
   try {
-    if (!fs.existsSync('storage/')) {
-      fs.mkdirSync('storage/')
-    }
+    var paths = await uploadPhotosToS3(req.baseId, req.files)
+    console.log(paths)
 
-    if (!fs.existsSync('storage/' + req.baseId)) {
-      fs.mkdirSync('storage/' + req.baseId)
-    }
-
-    if (!fs.existsSync('storage/' + req.baseId + '/album')) {
-      fs.mkdirSync('storage/' + req.baseId + '/album')
-    }
-    
-    // Check if there's an avatar already uploaded
-    var rootFolder = path.resolve(__dirname, '../')
-    var albumPath = rootFolder + '/storage/' + req.baseId + '/album'
-
-    for (file of req.files) {
-      var uploadedPath = 'uploads/' + file.originalname
-      var destinationPath = 'storage/' + req.baseId + '/album/' + file.originalname
-    
-      fs.copyFileSync(uploadedPath, destinationPath)
+    for (var path of paths) {
+      await models.Photo.create({path:path, UserId: req.baseId})
     }
     
   } catch (e) {
     console.log(e)
     return ReE(res, {error: e}, 500)
   }
-  return ReS(res, {}, 200)
+  return ReS(res, {paths: paths}, 200)
 })
 
 router.get('/:user_id/photos', async function(req, res) {
@@ -265,44 +229,27 @@ router.get('/:user_id/photos', async function(req, res) {
    * This info isn't stored in any database
    */
   try {
-    var rootFolder = path.resolve(__dirname, '../')
-    var albumPath = rootFolder + '/storage/' + req.params.user_id + '/album'
-
-    if (!fs.existsSync(albumPath)) {
-      // no avatar set
-      // send generic image
-      return ReS(res, {album: []}, 200)
-    }
-
-    var dir = fs.readdirSync(albumPath)
-
-    var photos = []
-    // Find the file called avatar or return default image if it isn't found
-    for (file of dir) {
-      var filePath = albumPath + '/' + file
-      var fileBase64 = fs.readFileSync(filePath).toString('base64')
-      photos.push({photo: fileBase64, name: file})
-    }
+    var user = await models.User.findById(req.params.user_id)
+    var userPhotos = await user.getPhotos()
+    var photos = userPhotos.filter(p => !p.isAvatar)
     return ReS(res, {album: photos}, 200)
-    
   } catch (e) {
     console.log(e)
   }
 })
 
-router.delete('/:user_id/photos', VerifyToken, async function(req, res) {
+router.delete('/:user_id/photos/:photo_id', VerifyToken, async function(req, res) {
   try {
-    var rootFolder = path.resolve(__dirname, '../')
-    var albumPath = rootFolder + '/storage/' + req.baseId + '/album'
-    var photoToDelete = albumPath + '/' + req.body.photo_name
+    var photoToDelete = await models.Photo.findById(req.params.photo_id)
 
-    if (!fs.existsSync(photoToDelete)) {
-      // no avatar set
-      // send generic image
-      return ReS(res, {message: "No photo found"}, 404)
+    var objKey = photoToDelete.path.split('/').pop()
+    await deleteFromS3(req.baseId, objKey)
+
+    if (photoToDelete.UserId !== req.baseId) {
+      return ReE(res, {error: "No auth"}, 500)
     }
 
-    fs.unlinkSync(photoToDelete)
+    await photoToDelete.destroy()
     
     return ReS(res, {message: "photo deleted"}, 200)
     

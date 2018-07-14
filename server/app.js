@@ -8,6 +8,7 @@ const winston = require('winston');
 const cors = require('cors')
 
 var routes = require('./routes/index');
+var admins = require('./routes/admins');
 var users  = require('./routes/users');
 var actors = require('./routes/actors');
 var agents = require('./routes/agents');
@@ -34,6 +35,7 @@ app.use('/', routes);
 app.use('/users', users);
 app.use('/actors', actors);
 app.use('/agents', agents);
+app.use('/admins', admins);
 app.use('/castingdirectors', castingDirectors);
 app.use('/extras', extras);
 app.use('/breakdowns', breakdowns);

@@ -23,7 +23,7 @@
                 </v-card-text>
               </v-card>
             </v-flex>
-            <v-flex xs12 md8 lg8 xl6>
+            <v-flex xs12 md8 lg9 xl6>
               <v-card>
                 <v-card-title primary-title>
                   <div class="same-line">
@@ -159,7 +159,7 @@
                       <v-icon left>send</v-icon> Request audition
                     </v-btn>
                     <v-spacer></v-spacer>
-                    <v-btn block color="primary">
+                    <v-btn v-if="!ownsBreakdown" @click="sendMessageDialog()" block color="primary">
                       <v-icon left>message</v-icon> Message the casting director
                     </v-btn>
                   </v-card-actions>
@@ -203,6 +203,7 @@
           </v-dialog>
         </v-container>
       </v-content>
+    <send-message-dialog></send-message-dialog>
     <app-footer></app-footer>
   </main>
 </template>
@@ -210,6 +211,7 @@
 <script>
 import Axios from 'axios'
 import { getProfile, isLoggedIn, isActor } from '@/components/authentication'
+import {bus} from '../../main'
 
 const CastingComplexAPI = `http://${window.location.hostname}:5050`
 
@@ -245,10 +247,26 @@ export default {
       form: {
         comments: ''
       },
-      selectedRoleId: ''
+      selectedRoleId: '',
+      directorUsername: '',
+      ownsBreakdown: ''
     }
   },
+  mounted () {
+  },
   methods: {
+    sendMessageDialog () {
+      console.log(this.ownsBreakdown)
+      var data = {fromUser: this.actorProfile.user.username, toUser: this.directorUsername}
+      bus.$emit('open_message_dialog', data)
+    },
+    fetchCastingDirectorById (id) {
+      return Axios.get(`${CastingComplexAPI}/castingdirectors/${id}/`).then(response => {
+        return response
+      }).catch(err => {
+        console.log(err)
+      })
+    },
     submitAuditionRequest () {
       if (!this.$refs.form.validate()) { return }
 
@@ -296,6 +314,10 @@ export default {
         this.breakdown.shootingEndsWhenFormatted = this.formatDate(this.breakdown.shootingEndsWhen)
         this.breakdown.submissionDeadlineFormatted = this.formatDate(this.breakdown.submissionDeadline)
         this.breakdown.callbackDateFormatted = this.formatDate(this.breakdown.callbackDate)
+        this.fetchCastingDirectorById(this.breakdown.CastingDirectorId).then(director => {
+          this.directorUsername = director.data.data.user.username
+          this.ownsBreakdown = this.actorProfile.user.username === this.directorUsername
+        })
       })
         .catch(function (error) {
           console.log(error)

@@ -60,7 +60,7 @@
                         </v-btn>
                         <v-btn icon small flat color="white"> <v-icon>fa fa-instagram</v-icon>
                         </v-btn>
-                        <v-btn small>
+                        <v-btn v-if="!isSelfViewing" @click="sendMessageDialog()" small>
                           <v-icon style="color: black !important;" dark left>message</v-icon>
                           message
                         </v-btn>
@@ -151,7 +151,6 @@
                           <h3>Roster types</h3>
                           <v-btn outline small round color="primary" v-for="rosterType in profile.rosterTypes" :key="rosterType">{{rosterType}}</v-btn>
                           <v-divider></v-divider>
-
                           <template v-if="isSelfViewing">
                             <v-btn small to="/edit/agent" block color="primary"> Edit your profile </v-btn>
                           </template>
@@ -218,7 +217,7 @@
                                 <v-card-media
                                   height="200px"
                                 >
-                                  <img @click="viewPhoto(key, photo.name)" class="photo text-xs-center" :src=photo.photo>
+                                  <img @click="viewPhoto(key, photo.name)" class="photo text-xs-center" :src=photo.path>
                                 </v-card-media>
                               </v-card>
                             </v-flex>
@@ -244,7 +243,7 @@
                           </v-flex>
                           <v-flex xs8 md8>
                             <v-card-text>
-                              <img class="view-photo" :src=album[viewPhotoIndex].photo>
+                              <img class="view-photo" :src=album[viewPhotoIndex].path>
                             </v-card-text>
                           </v-flex>
                           <v-flex xs2 md2>
@@ -280,12 +279,14 @@
           </v-layout>
         </v-container>
       </v-content>
+     <send-message-dialog></send-message-dialog>
      <app-footer></app-footer>
 </main>
 </template>
 
 <script>
-import { getProfile, isLoggedIn, isActor, isAgent, isDirector } from '@/components/authentication'
+import { getProfile, isLoggedIn, isActor, isAgent, isDirector, isAccountApproved } from '@/components/authentication'
+import {bus} from '../../main'
 import Axios from 'axios'
 
 const CastingComplexAPI = `http://${window.location.hostname}:5050`
@@ -360,6 +361,9 @@ export default {
     if (!isLoggedIn()) {
       this.$router.push('/')
     }
+    if (!isActor() && !isAccountApproved()) {
+      this.$router.push('/waiting-approval')
+    }
   },
   mounted () {
     this.fetchAgent(this.$route.params.username)
@@ -381,6 +385,10 @@ export default {
     }
   },
   methods: {
+    sendMessageDialog () {
+      var data = {fromUser: this.viewerProfile.user.username, toUser: this.$route.params.username}
+      bus.$emit('open_message_dialog', data)
+    },
     showActor (actor, index) {
       this.actorDialog = true
       this.viewActorIndex = index
@@ -398,6 +406,7 @@ export default {
         })
     },
     buildActorsProps (actors) {
+      this.defineViewer()
       for (var actor of actors) {
         this.actors.push(
           {
@@ -548,9 +557,7 @@ export default {
     fetchAlbum () {
       Axios.get(`${CastingComplexAPI}/users/${this.profile.userId}/photos`)
         .then((data) => {
-          this.album = data.data.album.map(function (p) {
-            return { photo: 'data:image/jpeg;base64,' + p.photo, name: p.name }
-          })
+          this.album = data.data.album
         }).catch((err) => {
           console.log(err)
         })
@@ -623,7 +630,9 @@ export default {
 
       const url = `${CastingComplexAPI}/users/photos/profile`
       return Axios.post(url, formData, config)
-        .then(x => console.log(x))
+        .then(res => {
+          this.profile.avatar = res.data.data
+        })
     },
     filesChange (fieldName, fileList) {
       console.log(fieldName)
@@ -669,13 +678,16 @@ export default {
         headers: {
           'x-access-token': localStorage.getItem('session_token'),
           'Content-Type': undefined
-        },
-        data: { photo_name: this.album[this.viewPhotoIndex].name }
+        }
       }
-      Axios.delete(`${CastingComplexAPI}/users/${this.profile.userId}/photos`, data)
+
+      Axios.delete(`${CastingComplexAPI}/users/${this.profile.userId}/photos/${this.album[this.viewPhotoIndex].id}`, data)
         .then((data) => {
-          console.log(data)
+          var albumLength = this.album.length
           this.album.splice(this.viewPhotoIndex, 1)
+          if (this.viewPhotoIndex + 1 === albumLength) {
+            this.viewPhotoIndex = 0
+          }
           if (this.album.length === 0) {
             this.viewPhotoIndex = 0
             this.displayPhoto = false
@@ -781,12 +793,6 @@ export default {
   }
   .card-btn-right {
     border-right: solid 1px #e4e4e4 !important;
-  }
-
-  .badge__badge {
-    border-radius: 10% !important;
-    width: 70px !important;
-    font-size: 12px !important;
   }
 
    @media screen and (max-width: 600px){

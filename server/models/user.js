@@ -37,6 +37,8 @@ module.exports = (sequelize, DataTypes) => {
           hooks: true
         });
 
+        User.hasMany(models.Photo)
+
         User.belongsToMany(models.Message, {
           through: models.MessageRecipient,
           foreignKey: "userId",
@@ -45,39 +47,22 @@ module.exports = (sequelize, DataTypes) => {
       }
     },
     instanceMethods: {
-      getProfilePic: function () {
+      getProfilePic: async function () {
+        var models = this.sequelize.models
 
-        var prefix = 'data:image/jpeg;base64,'
-
-        var rootFolder = path.resolve(__dirname, '../')
-        var avatarPath = 'storage/' + this.id
-    
-        var defaultImage = rootFolder + '/' + 'user.png'
-        var defaultImageFile = fs.readFileSync(defaultImage)
-    
-        if (!fs.existsSync(avatarPath)) {
-          // no avatar set
-          // send generic image
-          return prefix + defaultImageFile.toString('base64')
+        var userPhotos = await this.getPhotos()
+        var avatarPhoto = userPhotos.filter(p => p.isAvatar)[0]
+        console.log(avatarPhoto)
+        if (!avatarPhoto) {
+          // path for default
+          return 'https://s3.us-east-2.amazonaws.com/casting-complex/user.png'
         }
-        
-        var avatarFolder = rootFolder + '/'+  avatarPath
-    
-        var dir = fs.readdirSync(avatarFolder)
-    
-        // Find the file called avatar or return default image if it isn't found
-        for (file of dir) {
-          if (file.split('.')[0] === 'avatar') {
-            var filePath = avatarFolder + '/' + file
-            var file = fs.readFileSync(filePath)
-            return prefix + file.toString('base64')
-          }
-        }
-        return prefix + defaultImageFile.toString('base64')
+      
+        return avatarPhoto.path
       },
       buildResponse: async function () {
         var userJson = this.toJSON();
-        var userProfilePic = this.getProfilePic()
+        var userProfilePic = await this.getProfilePic()
         userJson.avatar = userProfilePic
         RemoveFields(userJson, ["updatedAt", "createdAt", "password"]);
         return userJson

@@ -1,0 +1,12 @@
+{
+  "name": "casting-complex",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "npm run --prefix server dev | npm run --prefix client dev"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+  }
+}
